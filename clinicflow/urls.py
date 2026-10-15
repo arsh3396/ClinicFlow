@@ -3,6 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 from clinicflow import views as core_views
 from patients import views as patient_views
@@ -19,7 +20,7 @@ urlpatterns = [
         auth_views.LogoutView.as_view(),
         name="logout",
     ),
-    path("", core_views.dashboard, name="dashboard"),
+    path('', RedirectView.as_view(url='/search/history/', permanent=False)),
     path("clinics/", include("clinics.urls")),
     path("doctors/", include("clinics.doctor_urls")),
     path("patients/", include("patients.urls")),

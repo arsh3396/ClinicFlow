@@ -288,3 +288,9 @@ MAILERS = {
         "BACKEND": "django.core.mail.backends.console.EmailBackend",
     },
 }
+
+
+# Authentication Core Redirects
+LOGIN_REDIRECT_URL = '/search/history/'
+
+LOGOUT_REDIRECT_URL = '/login/'

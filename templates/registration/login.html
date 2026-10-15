@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClinicFlow | Staff Login</title>
+    <!-- Embedded layout framework engine (bypasses network shields) -->
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; box-sizing: border-box; }
+        h2 { text-align: center; margin: 0 0 10px 0; color: #2c3e50; font-size: 28px; }
+        h5 { text-align: center; margin: 0 0 30px 0; color: #7f8c8d; font-weight: 400; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #34495e; font-size: 14px; font-weight: 600; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background-color: #3498db; border: none; border-radius: 4px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #2980b9; }
+        .alert { background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; border: 1px solid #f5c6cb; }
+        .footer-link { text-align: center; margin-top: 20px; display: block; color: #7f8c8d; text-decoration: none; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🩺 ClinicFlow</h2>
+        <h5>Staff Authentication Portal</h5>
+        
+        {% if form.errors %}
+            <div class="alert">Your username and password didn't match. Please try again.</div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" required autocomplete="current-password">
+            </div>
+            <button type="submit">Secure Sign In</button>
+        </form>
+        
+        <a href="/admin/" class="footer-link">⚙️ Go to System Admin Panel</a>
+    </div>
+</body>
+</html>
