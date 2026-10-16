@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}ClinicFlow | Clinician Directory{% endblock %}
+
+{% block extra_css %}
+.header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.header-actions h2 { color: #2c3e50; margin: 0; }
+.action-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
+.action-btn:hover { background-color: #2980b9; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+.card h4 { margin: 0 0 10px 0; color: #2d3748; font-size: 18px; }
+.card p { margin: 5px 0; color: #4a5568; font-size: 14px; }
+.clinic-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.tag { font-size: 11px; background: #e2e8f0; padding: 3px 6px; border-radius: 4px; color: #4a5568; font-weight: 500; }
+.edit-link { display: inline-block; margin-top: 10px; color: #3498db; text-decoration: none; font-size: 14px; font-weight: 600; float: right; }
+.edit-link:hover { text-decoration: underline; }
+.empty-box { background-color: #edf2f7; color: #4a5568; padding: 40px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; }
+{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h2>Clinician Operations Roster</h2>
+    <a href="{% url 'clinics:doctor_create' %}" class="action-btn">+ Add Practitioner</a>
+</div>
+
+<div class="grid">
+    {% if doctor_list or doctors %}
+        {% for doc in doctor_list|default:doctors %}
+            <div class="card">
+                <h4>👨‍⚕️ Dr. {{ doc.full_name }}</h4>
+                <p>🩺 <strong>Specialty:</strong> {{ doc.specialization }}</p>
+                <p>📄 <strong>License:</strong> <code>{{ doc.license_number }}</code></p>
+                <p>✉️ <strong>Email:</strong> {{ doc.email|default:"None Listed" }}</p>
+                <div class="clinic-tags">
+                    {% for affiliation in doc.clinic_affiliations.all %}
+                        <span class="tag">🏢 {{ affiliation.clinic.name }}</span>
+                    {% empty %}
+                        <span class="tag" style="background:#fff5f5; color:#c53030;">Unassigned</span>
+                    {% endfor %}
+                </div>
+                <a href="{% url 'clinics:doctor_update' doc.pk %}" class="edit-link">Edit Profile</a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <h3>No Practitioners Seeded Yet</h3>
+            <p>Click the button above to register a clinician profile.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

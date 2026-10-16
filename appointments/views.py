@@ -191,3 +191,23 @@ def daily_schedule(request: HttpRequest) -> HttpResponse:
             "appointments": qs.order_by("doctor__full_name", "scheduled_at"),
         },
     )
+
+@login_required
+def appointment_update(request, pk):
+    appointment = get_object_or_404(Appointment, pk=pk)
+    
+    if request.method == 'POST':
+        # Pass the logged-in request.user parameter to satisfy Cursor's custom __init__ method signatures
+        form = AppointmentForm(request.POST, instance=appointment, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Appointment #{appointment.id} successfully rescheduled!")
+            return redirect('appointments:appointment_detail', pk=appointment.pk)
+    else:
+        # Initialize the GET request state mapping out localized clinic variables
+        form = AppointmentForm(instance=appointment, user=request.user)
+        
+    return render(request, 'appointments/appointment_form.html', {
+        'form': form,
+        'appointment': appointment
+    })
