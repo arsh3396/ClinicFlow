@@ -188,14 +188,13 @@ def history_search(request: HttpRequest) -> HttpResponse:
     if query and len(query) < 3:
         error = "Enter at least 3 characters."
     elif query:
-        qs = (
-            MedicalHistoryEntry.objects.consented()
-            .filter(
-                entry_text__icontains=query,
-                clinic__in=user_clinics(request.user),
-            )
-            .select_related("patient", "author", "clinic")
-        )
+        # Enforce the privacy filter gate directly inside the active query logic
+        qs = MedicalHistoryEntry.objects.filter(
+            patient__consent_given=True,
+            entry_text__icontains=query
+        ).select_related("patient", "author", "clinic")
+
+
         paginator = Paginator(qs, 20)
         page = paginator.get_page(request.GET.get("page"))
     return render(
