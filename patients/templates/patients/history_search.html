@@ -1,0 +1,56 @@
+
+{% extends "base.html" %}
+
+{% block title %}ClinicFlow | Secure Search{% endblock %}
+
+{% block extra_css %}
+.search-form { display: flex; gap: 10px; }
+.search-input { flex: 1; padding: 12px 16px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 16px; outline: none; }
+.search-input:focus { border-color: #3498db; }
+.search-btn { padding: 12px 24px; background-color: #3498db; border: none; border-radius: 4px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
+.search-btn:hover { background-color: #2980b9; }
+.list-group { display: flex; flex-direction: column; gap: 15px; }
+.list-item { background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.list-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.list-item h5 { margin: 0; color: #2d3748; font-size: 16px; }
+.list-item small { color: #a0aec0; font-size: 12px; }
+.entry-box { background: #f7fafc; border: 1px solid #edf2f7; border-radius: 4px; padding: 15px; font-family: monospace; color: #4a5568; margin-bottom: 10px; white-space: pre-wrap; font-size: 14px; }
+.meta-box { color: #718096; font-size: 13px; }
+.alert-box { background-color: #edf2f7; color: #4a5568; padding: 30px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; }
+.alert-box h4 { margin: 0 0 8px 0; color: #4a5568; }
+.alert-box p { margin: 0; font-size: 14px; color: #718096; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>Consent-Aware EHR History Search</h3>
+    <p>Privacy Filter Status: Running. Non-consenting patient files are firewalled automatically.</p>
+    
+    <form method="GET" action="{% url 'history_search' %}" class="search-form">
+        <input type="text" name="q" class="search-input" placeholder="Type at least 3 characters to search history entries..." value="{{ query }}" required>
+        <button type="submit" class="search-btn">Search</button>
+    </form>
+</div>
+
+{% if query %}
+    <div class="list-group">
+        {% if page.object_list %}
+            {% for entry in page.object_list %}
+                <div class="list-item">
+                    <div class="list-item-header">
+                        <h5>🧑 Patient ID: {{ entry.patient.last_name }}, {{ entry.patient.first_name }}</h5>
+                        <small>{{ entry.recorded_at|date:"Y-m-d H:i" }} UTC</small>
+                    </div>
+                    <div class="entry-box">{{ entry.entry_text }}</div>
+                    <div class="meta-box">Recorded by: <strong>Dr. {{ entry.author.full_name }}</strong> at <em>{{ entry.clinic.name }}</em></div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert-box">
+                <h4>⚠️ No Records Found</h4>
+                <p>Either no logs contain your query text, or matching entries are safely hidden because the patient has not enabled privacy consent.</p>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

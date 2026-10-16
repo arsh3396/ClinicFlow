@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}ClinicFlow | Appointments Matrix{% endblock %}
+
+{% block extra_css %}
+.header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.header-actions h2 { color: #2c3e50; margin: 0; }
+.action-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
+.action-btn:hover { background-color: #2980b9; }
+.table-card { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+th { background-color: #f8fafc; padding: 15px 20px; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; }
+td { padding: 15px 20px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
+.badge { display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
+.status-scheduled { background: #ebf8ff; color: #2b6cb0; }
+.status-completed { background: #e6fffa; color: #234e52; }
+.status-cancelled { background: #fff5f5; color: #742a2a; }
+.reminder-true { background: #c6f6d5; color: #22543d; }
+.reminder-false { background: #feebc8; color: #744210; }
+.view-link { color: #3498db; text-decoration: none; font-weight: 600; }
+.view-link:hover { text-decoration: underline; }
+{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h2>Appointment Scheduling Matrix</h2>
+    <a href="{% url 'appointments:appointment_create' %}" class="action-btn">+ Book New Appointment</a>
+</div>
+
+<div class="table-card">
+    {% if appointments or appointment_list %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient Identifier</th>
+                    <th>Assigned Practitioner</th>
+                    <th>Clinic Location</th>
+                    <th>Scheduled Date/Time</th>
+                    <th>Status</th>
+                    <th>SMS Reminder</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments|default:appointment_list %}
+                    <tr>
+                        <td><strong>{{ appt.patient.last_name }}, {{ appt.patient.first_name }}</strong></td>
+                        <td>Dr. {{ appt.doctor.full_name }}</td>
+                        <td>{{ appt.clinic.name }}</td>
+                        <td>{{ appt.scheduled_at|date:"Y-m-d h:i A" }}</td>
+                        <td>
+                            <span class="badge status-{{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+                        </td>
+                        <td>
+                            <span class="badge reminder-{{ appt.reminder_sent|lower }}">
+                                {% if appt.reminder_sent %}Sent{% else %}Pending{% endif %}
+                            </span>
+                        </td>
+                        <td><a href="{% url 'appointments:appointment_detail' appt.pk %}" class="view-link">Open Chart</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 40px; text-align: center; color: #718096;">
+            <h3>No Scheduled Appointments Found</h3>
+            <p>Use the booking controls or admin node to inject baseline calendar tracking data.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

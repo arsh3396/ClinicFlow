@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}ClinicFlow | Appointment Detail{% endblock %}
+
+{% block extra_css %}
+.detail-card { background: white; border-radius: 8px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+.detail-header { border-bottom: 2px solid #edf2f7; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+.detail-header h2 { margin: 0; color: #2c3e50; }
+.grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+.info-group { margin-bottom: 15px; }
+.info-group label { display: block; color: #718096; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
+.info-group div { font-size: 16px; color: #2d3748; font-weight: 500; }
+.btn-group { display: flex; gap: 10px; border-top: 1px solid #edf2f7; padding-top: 20px; }
+.back-btn { padding: 10px 20px; background-color: #edf2f7; border: 1px solid #cbd5e0; border-radius: 4px; color: #4a5568; text-decoration: none; font-weight: bold; font-size: 14px; }
+.back-btn:hover { background-color: #e2e8f0; }
+.edit-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
+.edit-btn:hover { background-color: #2980b9; }
+{% endblock %}
+
+{% block content %}
+<div class="detail-card">
+    <div class="detail-header">
+        <h2>Operational Booking File #{{ appointment.id }}</h2>
+        <span style="font-weight: bold; color: #4a5568;">Status: {{ appointment.get_status_display }}</span>
+    </div>
+
+    <div class="grid-layout">
+        <div class="info-group">
+            <label>Registered Patient</label>
+            <div>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</div>
+        </div>
+        <div class="info-group">
+            <label>Assigned Practitioner</label>
+            <div>Dr. {{ appointment.doctor.full_name }} ({{ appointment.doctor.specialization }})</div>
+        </div>
+        <div class="info-group">
+            <label>Physical Clinic Location</label>
+            <div>{{ appointment.clinic.name }} ({{ appointment.clinic.city }})</div>
+        </div>
+        <div class="info-group">
+            <label>Scheduled Execution Timestamp</label>
+            <div>{{ appointment.scheduled_at|date:"Y-m-d h:i A" }} UTC</div>
+        </div>
+        <div class="info-group">
+            <label>Estimated Allocation Frame</label>
+            <div>{{ appointment.duration_minutes }} Minutes</div>
+        </div>
+        <div class="info-group">
+            <label>Background Worker Sync (SMS Status)</label>
+            <div>
+                {% if appointment.reminder_sent %}
+                    <span style="color: #22543d; font-weight: bold;">Dispatched at {{ appointment.reminder_sent_at|date:"Y-m-d H:i" }}</span>
+                {% else %}
+                    <span style="color: #744210; font-weight: bold;">Pending Background Queue Scan</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <a href="{% url 'appointments:appointment_list' %}" class="back-btn">⬅️ Back to Matrix</a>
+        <a href="{% url 'appointments:appointment_update' appointment.pk %}" class="edit-btn">Reschedule Slot</a>
+    </div>
+</div>
+{% endblock %}

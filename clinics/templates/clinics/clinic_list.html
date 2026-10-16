@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}ClinicFlow | Registered Clinics{% endblock %}
+
+{% block extra_css %}
+.header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.header-area h2 { color: #2c3e50; margin: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+.card h4 { margin: 0 0 10px 0; color: #2d3748; font-size: 18px; }
+.card p { margin: 5px 0; color: #4a5568; font-size: 14px; }
+.badge { display: inline-block; padding: 4px 8px; background: #c6f6d5; color: #22543d; font-size: 12px; font-weight: bold; border-radius: 4px; margin-top: 10px; }
+.badge.inactive { background: #fed7d7; color: #742a2a; }
+.empty-box { background-color: #edf2f7; color: #4a5568; padding: 40px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; }
+{% endblock %}
+
+{% block content %}
+<div class="header-area">
+    <h2>Registered Physical Clinics</h2>
+</div>
+
+<div class="grid">
+    {% if clinic_list or clinics %}
+        {% for clinic in clinic_list|default:clinics %}
+            <div class="card">
+                <h4>🏢 {{ clinic.name }}</h4>
+                <p>📍 <strong>Location:</strong> {{ clinic.address_line1 }}, {{ clinic.city }}</p>
+                <p>📞 <strong>Phone:</strong> {{ clinic.phone }}</p>
+                <p>🌐 <strong>Timezone:</strong> <code>{{ clinic.timezone }}</code></p>
+                <span class="badge {% if not clinic.is_active %}inactive{% endif %}">
+                    {% if clinic.is_active %}Active Branch{% else %}Inactive{% endif %}
+                </span>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <h3>No Clinics Seeded Yet</h3>
+            <p>Go to the Admin Dashboard to register your practice branches.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
