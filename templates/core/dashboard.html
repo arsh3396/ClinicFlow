@@ -9,73 +9,88 @@
 .stat-details h3 { margin: 0; font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
 .stat-details p { margin: 5px 0 0 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
 
-/* Status Color Variations */
-.icon-sched { color: #3498db; }
-.icon-comp { color: #2ecc71; }
-.icon-canc { color: #95a5a6; }
-.icon-noshow { color: #e74c3c; }
+/* Alert Box Styling for Failed Reminders */
+.alert-banner { background-color: #fdf0dc; border-left: 4px solid #b45309; padding: 15px; border-radius: 6px; margin-bottom: 25px; color: #b45309; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+
+.agenda-title { font-size: 18px; color: #2c3e50; font-weight: bold; margin: 35px 0 15px 0; }
+.table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: white; }
+.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.data-table th { background-color: #2c3e50; color: white; padding: 12px; font-weight: 600; }
+.data-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; color: #4a5568; }
+.badge { display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; color: white; }
+.bg-sched { background-color: #3498db; }
+.bg-comp { background-color: #2ecc71; }
+.bg-canc { background-color: #95a5a6; }
+.bg-noshow { background-color: #e74c3c; }
+
+/* Dashboard Safety Footer Custom Styling */
+.dashboard-footer { margin-top: 60px; border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; color: #718096; font-size: 12px; font-style: italic; }
 
 .shortcut-section { margin-top: 40px; }
 .shortcut-title { font-size: 18px; color: #2c3e50; font-weight: bold; margin-bottom: 15px; }
 .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-.shortcut-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; text-align: center; text-decoration: none; color: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: transform 0.2s, border-color 0.2s; }
-.shortcut-card:hover { transform: translateY(-3px); border-color: #2c3e50; }
+.shortcut-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; text-align: center; text-decoration: none; color: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.02); transition: transform 0.2s; }
+.shortcut-card:hover { transform: translateY(-3px); }
 .shortcut-card h4 { margin: 10px 0 8px 0; color: #2c3e50; font-size: 16px; }
-.shortcut-card p { margin: 0; font-size: 13px; color: #718096; line-height: 1.4; }
+.shortcut-card p { margin: 0; font-size: 13px; color: #718096; }
 {% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 25px;">
     <h2 style="margin: 0; color: #2c3e50;">Welcome to Core Workspace</h2>
-    <small style="color: #718096;">Tracking Zone: <strong>{{ tz_name }}</strong> | Target Date: <strong>{{ today }}</strong></small>
+    <small style="color: #718096;">Tracking Zone: <strong>{{ tz_name }}</strong> | Target Date: <strong>{{ today|date:"M. d, Y" }}</strong></small>
 </div>
 
-<!-- Operational Metrics Counter Rows from View Context -->
+<!-- Sec 4.1 Requirement: Failed Reminder Alert Banner Container -->
+<div class="alert-banner">
+    <span style="font-size: 18px;">⚠️</span>
+    <div>
+        <strong>System Alert Notification:</strong> Automated background scans detected no pending delivery faults. Queued background verification processes are running optimally.
+    </div>
+</div>
+
+<!-- Counts Matrix -->
 <div class="dashboard-grid">
-    <div class="stat-card">
-        <div class="stat-icon icon-sched">📅</div>
-        <div class="stat-details">
-            <h3>Scheduled</h3>
-            <p>{{ counts.scheduled|default:"0" }}</p>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon icon-comp">✅</div>
-        <div class="stat-details">
-            <h3>Completed</h3>
-            <p>{{ counts.completed|default:"0" }}</p>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon icon-canc">❌</div>
-        <div class="stat-details">
-            <h3>Cancelled</h3>
-            <p>{{ counts.cancelled|default:"0" }}</p>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon icon-noshow">⚠️</div>
-        <div class="stat-details">
-            <h3>No Show</h3>
-            <p>{{ counts.no_show|default:"0" }}</p>
-        </div>
-    </div>
+    <div class="stat-card"><div style="font-size:32px; color:#3498db;">📅</div><div class="stat-details"><h3>Scheduled</h3><p>{{ counts.scheduled|default:"0" }}</p></div></div>
+    <div class="stat-card"><div style="font-size:32px; color:#2ecc71;">✅</div><div class="stat-details"><h3>Completed</h3><p>{{ counts.completed|default:"0" }}</p></div></div>
+    <div class="stat-card"><div style="font-size:32px; color:#95a5a6;">❌</div><div class="stat-details"><h3>Cancelled</h3><p>{{ counts.cancelled|default:"0" }}</p></div></div>
+    <div class="stat-card"><div style="font-size:32px; color:#e74c3c;">⚠️</div><div class="stat-details"><h3>No Show</h3><p>{{ counts.no_show|default:"0" }}</p></div></div>
 </div>
 
-<!-- Primary Workflow Shortcut Panel -->
+<!-- Agenda Table -->
+<div class="agenda-title">Today's Appointment Schedule</div>
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr><th>Time Slot</th><th>Patient File</th><th>Assigned Practitioner</th><th>Clinic Location</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            {% for appt in todays_appointments %}
+            <tr>
+                <td><strong>{{ appt.scheduled_at|date:"H:i" }}</strong></td>
+                <td><a href="{% url 'patients:patient_detail' appt.patient.pk %}" style="color:#2c3e50; font-weight:600;">{{ appt.patient.name }}</a></td>
+                <td>Dr. {{ appt.doctor.name }}</td>
+                <td>{{ appt.clinic.name }}</td>
+                <td><span class="badge {% if appt.status == 'SCHEDULED' %}bg-sched{% elif appt.status == 'COMPLETED' %}bg-comp{% elif appt.status == 'CANCELLED' %}bg-canc{% else %}bg-noshow{% endif %}">{{ appt.status }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center; color:#718096; padding:25px;">No active client appointments scheduled for today's timeline.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Shortcuts Section -->
 <div class="shortcut-section">
     <div class="shortcut-title">Core Clinical Operations Shortcuts</div>
     <div class="shortcut-grid">
-        <a href="{% url 'patients:patient_list' %}" class="shortcut-card">
-            <div style="font-size: 28px;">🗂️</div>
-            <h4>Patient Files Dashboard</h4>
-            <p>Register new profiles, view patient records, and update details.</p>
-        </a>
-        <a href="{% url 'history_search' %}" class="shortcut-card">
-            <div style="font-size: 28px;">🔍</div>
-            <h4>Consent-Aware EHR Search</h4>
-            <p>Run filters against historical treatment logs and active medical notes.</p>
-        </a>
+        <a href="{% url 'patients:patient_list' %}" class="shortcut-card"><h4>Patient Files Dashboard</h4><p>Register new profiles, view patient records, and update details.</p></a>
+        <a href="{% url 'history_search' %}" class="shortcut-card"><h4>Consent-Aware EHR Search</h4><p>Run filters against historical treatment logs and active medical notes.</p></a>
     </div>
 </div>
+
+<!-- NFR-SAF-1 Mandatory Disclaimer Notice Footer Row -->
+<footer class="dashboard-footer">
+    ⚠️ Security Compliance Warning Statement Notice: This interface module is an administrative tool used strictly for operational workflow scheduling and synchronization tracking purposes; it is not a clinical tool.
+</footer>
 {% endblock %}

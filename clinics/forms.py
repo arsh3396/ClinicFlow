@@ -57,7 +57,14 @@ class DoctorForm(forms.ModelForm):
         if clinic_queryset is not None:
             self.fields["clinics"].queryset = clinic_queryset
         if self.instance.pk:
+            # Prefetch clinic affiliations cache data to minimize database overhead loops
             self.fields["clinics"].initial = self.instance.clinics.all()
+            
+            # Pre-populate the input fields with current consulting days if uniform
+            first_link = self.instance.clinic_affiliations.first()
+            if first_link and not self.files and not self.data:
+                self.initial["consulting_days"] = first_link.consulting_days
+                
         style_form(self)
         for name in ("clinics",):
             self.fields[name].widget.attrs["class"] = "form-check-input"
@@ -66,21 +73,26 @@ class DoctorForm(forms.ModelForm):
         doctor = super().save(commit=commit)
         if commit:
             self._sync_clinics(doctor)
+        else:
+            self.save_m2m = lambda: self._sync_clinics(doctor)
         return doctor
 
     def _sync_clinics(self, doctor: Doctor) -> None:
         selected = list(self.cleaned_data["clinics"])
         days = self.cleaned_data.get("consulting_days") or ""
         selected_ids = {c.pk for c in selected}
+        
         existing = {link.clinic_id: link for link in doctor.clinic_affiliations.all()}
+        
         for clinic in selected:
             if clinic.pk not in existing:
                 DoctorClinic.objects.create(
                     doctor=doctor, clinic=clinic, consulting_days=days
                 )
-            elif days:
+            else:
                 link = existing[clinic.pk]
-                if not link.consulting_days:
+                if link.consulting_days != days:
                     link.consulting_days = days
                     link.save(update_fields=["consulting_days"])
+                    
         doctor.clinic_affiliations.exclude(clinic_id__in=selected_ids).delete()

@@ -42,6 +42,11 @@ class Clinic(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def delete(self, *args, **kwargs) -> tuple[int, dict[str, int]]:
+        self.is_active = False
+        self.save(update_fields=["is_active"])
+        return 1, {self._meta.label: 1}
+
 
 class Doctor(models.Model):
     user = models.OneToOneField(
@@ -82,7 +87,7 @@ class DoctorClinic(models.Model):
     )
     clinic = models.ForeignKey(
         Clinic,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,  # Hardening: Prevents raw cascading DB wipes if a clinic record is dropped from the database.
         related_name="doctor_affiliations",
     )
     consulting_days: models.CharField = models.CharField(

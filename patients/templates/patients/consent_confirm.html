@@ -26,13 +26,21 @@
 <div class="card">
     <div class="consent-header">
         <span style="font-size: 24px;">📋</span>
-        <h2 class="consent-title">Patient Records Consent Authorization</h2>
+        <h2 class="consent-title">
+            {% if new_value %}Grant Patient Records Consent Authorization{% else %}Revoke Patient Records Consent Authorization{% endif %}
+        </h2>
     </div>
 
-    <!-- Security Context Warning Box -->
+    <!-- Security Context Warning Box shifts style according to active state transitions -->
+    {% if new_value %}
     <div class="warning-box">
-        <strong>Important Action Required:</strong> You are attempting to add a history entry for a patient who has not yet given explicitly logged clinical record sharing authorization. You must document consent verification parameters below before proceeding.
+        <strong>Important Action Required:</strong> You are attempting to view or modify an entry for a patient who has not yet given explicitly logged clinical record sharing authorization. You must document consent verification below before proceeding.
     </div>
+    {% else %}
+    <div class="warning-box revoke">
+        <strong>Warning: Revoking Information Sharing Permissions</strong> You are about to revoke this patient's data consent policy. This action will instantly hide all clinical medical history profiles and EHR logs from medical workspace views.
+    </div>
+    {% endif %}
 
     <!-- Brief Patient Summary Context Panel -->
     <div class="patient-preview">
@@ -47,16 +55,27 @@
     </div>
 
     <p class="consent-statement">
-        By checking the system confirmation action below, you verify that the patient or legal guardian has formally signed the physical **ClinicFlow Information Sharing Authorization Form** allowing staff to update, audit, and log historical clinical health metrics.
+        {% if new_value %}
+            By checking the system confirmation action below, you verify that the patient or legal guardian has formally signed the physical **ClinicFlow Information Sharing Authorization Form** allowing staff to update, audit, and log historical clinical health metrics.
+        {% else %}
+            By clicking below, you verify that the patient or legal guardian has requested to revoke data-sharing privileges. This system transaction will be fully timestamped and tracked in the security compliance logs.
+        {% endif %}
     </p>
 
     <!-- Post request configuration payload block -->
     <form method="POST" action="{% url 'patients:consent_confirm' patient.pk %}" novalidate>
         {% csrf_token %}
         
+        <!-- CRITICAL FIX: This satisfies line 134 in your views.py execution logic -->
+        <input type="hidden" name="confirm" value="yes">
+        
         <div class="form-actions">
-            <a href="{% url 'patients:patient_list' %}" class="btn-cancel">Cancel and Return</a>
-            <button type="submit" class="btn-confirm">Grant Consent & Proceed</button>
+            <!-- Fixed Cancel Back-Link to drop back to the active patient profile instead of the generic list -->
+            <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn-cancel">Cancel and Return</a>
+            
+            <button type="submit" class="btn-confirm {% if not new_value %}revoke{% endif %}">
+                {% if new_value %}Grant Consent & Proceed{% else %}Revoke Consent & Hide{% endif %}
+            </button>
         </div>
     </form>
 </div>

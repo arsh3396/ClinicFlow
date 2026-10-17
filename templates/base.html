@@ -4,32 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ClinicFlow{% endblock %}</title>
+    <!-- Included Bootstrap Framework Elements & Icons for Layout Stability -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <link href="https://jsdelivr.net" rel="stylesheet">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 0; }
         nav { background-color: #2c3e50; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         nav h1 { margin: 0; font-size: 20px; font-weight: 600; }
-        .nav-links a { color: white; text-decoration: none; margin-left: 15px; font-size: 14px; font-weight: bold; border: 1px solid rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 4px; }
-        .nav-links a:hover { background: rgba(255,255,255,0.1); }
-        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; box-sizing: border-box; }
+        .nav-links { display: flex; align-items: center; gap: 15px; }
+        .nav-links a { color: white; text-decoration: none; font-size: 14px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 4px; transition: all 0.2s ease; }
+        .nav-links a:hover, .nav-links a.active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); }
+        .nav-links .management-header { color: rgba(255, 255, 255, 0.5); font-size: 11px; text-uppercase: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-left: 10px; margin-right: 5px; }
+        .container { max-width: 950px; margin: 40px auto; padding: 0 20px; box-sizing: border-box; }
         .card { background: white; border-radius: 8px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; border: 1px solid #e2e8f0; }
-        /* Child templates inject their custom inner views here */
         {% block extra_css %}{% endblock %}
     </style>
 </head>
 <body>
     <nav>
-        <h1>🩺 ClinicFlow Core Workspace</h1>
+        <a href="/" style="text-decoration: none; color: #ffffff;">
+            <h1>🩺 ClinicFlow</h1>
+        </a>
+        
+        <!-- Cleaned Layout Group Container for Navigation Options -->
         <div class="nav-links">
-            <a href="/search/history/">Search Records</a>
-            <a href="/clinics/">Clinics Branch</a>
-            <a href="/admin/">Admin Dashboard</a>
+            <a href="/search/history/" class="{% if 'search' in request.path %}active{% endif %}">
+                <i class="bi bi-search me-1"></i> Search Records
+            </a>
+            
+            <span class="management-header">Management:</span>
+            
+            <a href="{% url 'clinics:clinic_list' %}" class="{% if 'clinics' in request.path and not 'doctors' in request.path %}active{% endif %}">
+                <i class="bi bi-building me-1"></i> Clinics Portal
+            </a>
+
+            <a href="{% url 'clinics:doctor_list' %}" class="{% if 'doctors' in request.path %}active{% endif %}">
+                <i class="bi bi-person-badge me-1"></i> Medical Staff
+            </a>
         </div>
     </nav>
 
+    <!-- Messaging Block to Handle Success and Failure Notification Banners Natively -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <div class="container">
         {% block content %}
-
         {% endblock %}
     </div>
+
+    <script src="https://jsdelivr.net"></script>
 </body>
 </html>

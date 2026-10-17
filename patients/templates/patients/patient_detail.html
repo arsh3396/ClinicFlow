@@ -1,52 +1,118 @@
 {% extends 'base.html' %}
 
+{% block title %}Patient File: {{ patient.name }} | ClinicFlow{% endblock %}
+
 {% block extra_css %}
-.form-header { font-size: 20px; color: #2c3e50; font-weight: bold; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
-.form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
-.form-group label { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #4a5568; }
+.detail-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }
+.detail-header h3 { margin: 0; color: #2c3e50; font-size: 22px; }
+.id-badge { background: #e2e8f0; color: #4a5568; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; }
 
-/* Injects custom attributes into fields via standard widgets */
-.form-group input, .form-group textarea, .form-group select { padding: 10px 14px; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 4px; background-color: #fff; outline: none; box-sizing: border-box; width: 100%; }
-.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2c3e50; }
+.info-grid { display: grid; grid-template-columns: 160px 1fr; row-gap: 15px; margin-bottom: 30px; font-size: 15px; }
+.info-label { color: #718096; font-weight: 500; }
+.info-val { color: #2d3748; font-weight: 600; }
 
-.field-help { font-size: 12px; color: #718096; margin-top: 4px; }
-.field-error { color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 5px; }
+.privacy-banner { background-color: #fdf0dc; border-left: 4px solid #b45309; padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.privacy-text { color: #b45309; font-size: 14px; font-weight: 500; }
+.btn-toggle { background: #b45309; color: white; text-decoration: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; }
+.btn-toggle:hover { background: #92400e; }
+.btn-toggle.active { background: #27ae60; }
+.btn-toggle.active:hover { background: #219653; }
 
-.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
-.btn-cancel { color: #7f8c8d; text-decoration: none; font-size: 14px; font-weight: bold; }
-.btn-cancel:hover { text-decoration: underline; }
-.btn-save { background: #27ae60; color: white; padding: 10px 24px; border: none; border-radius: 4px; font-weight: bold; font-size: 15px; cursor: pointer; }
-.btn-save:hover { background: #219653; }
+.history-section { margin-top: 30px; }
+.section-title { font-size: 18px; color: #2c3e50; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+.locked-box { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 30px; text-align: center; border-radius: 8px; color: #718096; font-size: 14px; font-weight: 500; }
+.entry-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
+.entry-meta { font-size: 12px; color: #718096; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.entry-notes { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-line; }
+
+.footer-nav { display: flex; justify-content: space-between; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+.btn-back { color: #7f8c8d; text-decoration: none; font-weight: bold; padding: 8px 12px; font-size: 14px; }
+.btn-back:hover { text-decoration: underline; }
+.btn-action-edit { background: #f39c12; color: white; text-decoration: none; padding: 8px 18px; border-radius: 4px; font-weight: bold; font-size: 14px; }
+.btn-action-edit:hover { background: #d35400; }
 {% endblock %}
 
 {% block content %}
 <div class="card">
-    <div class="form-header">
-        {% if form.instance.pk %}Update Active Patient Profile{% else %}Register Workspace Patient Case{% endif %}
+    <div class="detail-header">
+        <h3>Patient Record Summary</h3>
+        <span class="id-badge">ID: {{ patient.id }}</span>
     </div>
 
-    <form method="POST" novalidate>
-        {% csrf_token %}
+    <!-- Demographics Grid -->
+    <div class="info-grid">
+        <div class="info-label">Full Legal Name:</div>
+        <div class="info-val">{{ patient.first_name }} {{ patient.last_name }}</div>
 
-        {% for field in form %}
-        <div class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
+        <div class="info-label">Age / Gender:</div>
+        <div class="info-val">{{ patient.date_of_birth|timesince }} yrs / {{ patient.gender }}</div>
+
+        <div class="info-label">Primary Contact:</div>
+        <div class="info-val">{{ patient.phone_number }}</div>
+
+        <div class="info-label">Email Address:</div>
+        <div class="info-val">{{ patient.email|default:"Not provided" }}</div>
+
+        <div class="info-label">SMS Status:</div>
+        <div class="info-val">
+            {% if patient.sms_opt_out %}
+                <span style="color: #e74c3c;">🚫 Opted Out</span>
+            {% else %}
+                <span style="color: #27ae60;">✅ Opted In</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Section 6: Dynamic Privacy Consent Handshake Banner -->
+    <div class="privacy-banner" style="{% if patient.consent_given %}background-color: #d9f0ec; border-left-color: #0f766e;{% endif %}">
+        <div class="privacy-text" style="{% if patient.consent_given %}color: #0f766e;{% endif %}">
+            {% if patient.consent_given %}
+                🔒 <strong>Patient privacy consent is active.</strong> Historical logs are visible to authorized staff.
+            {% else %}
+                ⚠️ <strong>Information sharing consent missing.</strong> Medical details are hidden.
+            {% endif %}
+        </div>
+        <a href="{% url 'patients:consent_confirm' patient.pk %}" class="btn-toggle {% if patient.consent_given %}active{% endif %}">
+            {% if patient.consent_given %}Revoke Consent{% else %}Grant Consent{% endif %}
+        </a>
+    </div>
+
+    <!-- Section 6 & 7: Consent-Gated EHR History Workspace -->
+    <div class="history-section">
+        <div class="section-title">Clinical Medical History (EHR-Lite)</div>
+        
+        {% if patient.consent_given %}
+            <!-- Loop through entries securely mapped from the view context -->
+            {% for entry in medical_history %}
+                <div class="entry-card">
+                    <div class="entry-meta">
+                        <span>Recorded by <strong>Dr. {{ entry.author.name }}</strong> ({{ entry.clinic.name }})</span>
+                        <span>{{ entry.recorded_at|date:"Y-m-d H:i" }}</span>
+                    </div>
+                    <div class="entry-notes">{{ entry.notes }}</div>
+                </div>
+            {% empty %}
+                <div class="locked-box" style="border-style: solid;">No active historical logs recorded for this patient file.</div>
+            {% endfor %}
             
-            {% if field.help_text %}
-            <span class="field-help">{{ field.help_text }}</span>
+            <!-- Allow clinical notes additions if user role is Doctor, Admin, or Clinic Admin -->
+            {% if request.user.groups.all or request.user.is_superuser %}
+                <div style="margin-top: 20px; text-align: right;">
+                    <a href="#" class="btn-toggle active" style="text-decoration: none; padding: 10px 20px;">+ Append Clinical Entry</a>
+                </div>
             {% endif %}
             
-            {% for error in field.errors %}
-            <span class="field-error">{{ error }}</span>
-            {% endfor %}
-        </div>
-        {% endfor %}
+        {% else %}
+            <!-- Section 6 Mandatory Hidden Panel Warning Statement -->
+            <div class="locked-box">
+                🔒 Medical history hidden: patient consent not given.
+            </div>
+        {% endif %}
+    </div>
 
-        <div class="form-actions">
-            <a href="{% url 'patients:patient_list' %}" class="btn-cancel">Discard Changes</a>
-            <button type="submit" class="btn-save">Commit Record</button>
-        </div>
-    </form>
+    <div class="footer-nav">
+        <a href="{% url 'patients:patient_list' %}" class="btn-back">← Back to Workspace Records</a>
+        <a href="{% url 'patients:patient_update' patient.pk %}" class="btn-action-edit">Modify Records</a>
+    </div>
 </div>
 {% endblock %}

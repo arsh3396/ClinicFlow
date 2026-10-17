@@ -14,6 +14,8 @@ class PatientForm(forms.ModelForm):
             "first_name",
             "last_name",
             "date_of_birth",
+            "email",
+            "gender",
             "phone_number",
             "consent_given",
             "sms_opt_out",

@@ -27,26 +27,23 @@ def _forbidden(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
-def patient_list(request: HttpRequest) -> HttpResponse:
-    query = (request.GET.get("q") or "").strip()
-    qs = Patient.objects.all()
-    if query:
-        name_filter = Q(first_name__icontains=query) | Q(last_name__icontains=query)
-        if query.startswith("+") or query.isdigit():
-            qs = qs.filter(name_filter | Q(phone_number__endswith=query.lstrip()))
-        else:
-            qs = qs.filter(name_filter)
-    paginator = Paginator(qs, 20)
-    page = paginator.get_page(request.GET.get("page"))
-    return render(
-        request,
-        "patients/patient_list.html",
-        {
-            "page": page,
-            "query": query,
-            "can_edit": can_edit_patients(request.user),
-        },
-    )
+def patient_list(request):
+    query_set = Patient.objects.all()
+
+    search_query = request.GET.get('q', '').strip()
+    
+    if search_query:
+        query_set = query_set.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(phone_number__icontains=search_query)
+        )
+    
+    context = {
+        'patients': query_set
+    }
+    
+    return render(request, 'patients/patient_list.html', context)
 
 
 @login_required

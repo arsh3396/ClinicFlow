@@ -121,17 +121,30 @@ def doctor_create(request: HttpRequest) -> HttpResponse:
 def doctor_update(request: HttpRequest, pk: int) -> HttpResponse:
     if not can_manage_doctors(request.user):
         return _forbidden(request)
-    doctor = get_object_or_404(scoped_doctors(request.user), pk=pk)
+
+    doctor = get_object_or_404(
+        scoped_doctors(request.user).prefetch_related("clinics"), 
+        pk=pk
+    )
+    
+    allowed_clinics = user_clinics(request.user).filter(
+        models.Q(is_active=True) | models.Q(pk__in=doctor.clinics.all())
+    )
+    
     form = DoctorForm(
         request.POST or None,
         instance=doctor,
-        clinic_queryset=user_clinics(request.user).filter(is_active=True),
+        clinic_queryset=allowed_clinics.distinct(),
     )
+    
     if request.method == "POST" and form.is_valid():
         selected_ids = {c.pk for c in form.cleaned_data["clinics"]}
-        current_ids = set(doctor.clinics.values_list("pk", flat=True))
+        
+        current_ids = {c.pk for c in doctor.clinics.all()}
+        
         removing = current_ids - selected_ids
         blocking = _blocking_future_appointments(doctor, removing)
+        
         if blocking.exists():
             form.add_error(
                 "clinics",
@@ -142,6 +155,7 @@ def doctor_update(request: HttpRequest, pk: int) -> HttpResponse:
             form.save()
             messages.success(request, "Doctor profile updated.")
             return redirect("doctors:list")
+            
     return render(
         request,
         "clinics/doctor_form.html",
