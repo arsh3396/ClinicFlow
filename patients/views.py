@@ -61,7 +61,7 @@ def patient_create(request: HttpRequest) -> HttpResponse:
             patient.set_consent(True, request.user)
         patient.save()
         messages.success(request, "Patient created.")
-        return redirect("patients:detail", pk=patient.pk)
+        return redirect("patients:patient_detail", pk=patient.pk)
     return render(request, "patients/patient_form.html", {"form": form, "title": "New patient"})
 
 
@@ -77,7 +77,7 @@ def patient_update(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Patient updated.")
-        return redirect("patients:detail", pk=patient.pk)
+        return redirect("patients:patient_detail", pk=patient.pk)
     return render(
         request,
         "patients/patient_form.html",
@@ -136,13 +136,13 @@ def consent_confirm(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST":
         if request.POST.get("confirm") != "yes":
             messages.error(request, "Confirmation is required to change consent.")
-            return redirect("patients:consent", pk=patient.pk)
+            return redirect("patients:consent_confirm", pk=patient.pk)
         patient.set_consent(new_value, request.user)
         messages.success(
             request,
             "Consent granted." if new_value else "Consent revoked. History is now hidden.",
         )
-        return redirect("patients:detail", pk=patient.pk)
+        return redirect("patients:patient_detail", pk=patient.pk)
     return render(
         request,
         "patients/consent_confirm.html",

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}403 Access Forbidden{% endblock %}
+
+{% block extra_css %}
+.forbidden-container { text-align: center; padding: 40px 20px; }
+.forbidden-icon { font-size: 64px; margin-bottom: 20px; }
+.forbidden-title { color: #e74c3c; font-size: 26px; font-weight: bold; margin-bottom: 15px; }
+.forbidden-msg { color: #4a5568; font-size: 16px; margin-bottom: 30px; line-height: 1.5; }
+.btn-return { display: inline-block; background-color: #2c3e50; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-weight: bold; font-size: 15px; transition: background 0.2s; }
+.btn-return:hover { background-color: #1a252f; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="forbidden-container">
+        <div class="forbidden-icon">🚫</div>
+        <div class="forbidden-title">403 - Access Denied</div>
+        <p class="forbidden-msg">
+            {{ message|default:"You do not have the required administrative permissions to access this clinical record." }}
+        </p>
+        <a href="{% url 'patients:patient_list' %}" class="btn-return">Return to Workspace Records</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+/* Custom styling for the list and filter elements */
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.dashboard-header h2 { margin: 0; font-size: 22px; color: #2c3e50; }
+.btn-action { display: inline-block; background-color: #2c3e50; color: white; text-decoration: none; padding: 10px 18px; border-radius: 4px; font-weight: bold; font-size: 14px; transition: background 0.2s; border: none; cursor: pointer; }
+.btn-action:hover { background-color: #1a252f; }
+.btn-sub { display: inline-block; background: #7f8c8d; color: white; padding: 6px 12px; font-size: 12px; border-radius: 4px; text-decoration: none; font-weight: bold; margin-right: 5px; }
+.btn-sub:hover { background: #616c6d; }
+.btn-edit { background: #f39c12; }
+.btn-edit:hover { background: #d35400; }
+
+.search-bar-wrap { margin-bottom: 30px; display: flex; gap: 10px; }
+.search-input { flex-grow: 1; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; outline: none; }
+.search-input:focus { border-color: #2c3e50; }
+
+.table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 15px; }
+.data-table th { background-color: #2c3e50; color: white; padding: 14px; font-weight: 600; }
+.data-table td { padding: 14px; border-bottom: 1px solid #e2e8f0; color: #4a5568; }
+.data-table tr:hover { background-color: #f8fafc; }
+.no-data { text-align: center; color: #718096; padding: 30px !important; }
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h2>Patient Records Search Dashboard</h2>
+    <a href="{% url 'patients:patient_create' %}" class="btn-action">+ Register New Patient</a>
+</div>
+
+<!-- Dynamic Query Filter Bar -->
+<form method="GET" action="{% url 'patients:patient_list' %}" class="search-bar-wrap">
+    <input type="text" name="q" class="search-input" placeholder="Search files by full name or record ID..." value="{{ request.GET.q }}">
+    <button type="submit" class="btn-action">Search</button>
+</form>
+
+<!-- Dashboard Data Grid Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Patient ID</th>
+                    <th>Full Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Phone Contact</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td><strong>#{{ patient.id }}</strong></td>
+                    <td>{{ patient.name }}</td>
+                    <td>{{ patient.age }}</td>
+                    <td>{{ patient.gender }}</td>
+                    <td>{{ patient.phone }}</td>
+                    <td>
+                        <a href="{% url 'patients:patient_detail' patient.pk %}" class="btn-sub">View</a>
+                        <a href="{% url 'patients:patient_update' patient.pk %}" class="btn-sub btn-edit">Edit</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="no-data">No matching clinical records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>  
+</div>
+{% endblock %}

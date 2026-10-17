@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+.form-header { font-size: 20px; color: #2c3e50; font-weight: bold; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+.form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+.form-group label { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #4a5568; }
+
+/* Styles actual form inputs dynamically loaded from Django */
+.form-group input, .form-group textarea, .form-group select { padding: 10px 14px; font-size: 15px; border: 1px solid #cbd5e1; border-radius: 4px; background-color: #fff; outline: none; box-sizing: border-box; width: 100%; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #2c3e50; }
+
+.field-help { font-size: 12px; color: #718096; margin-top: 4px; }
+.field-error { color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 5px; }
+
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+.btn-cancel { color: #7f8c8d; text-decoration: none; font-size: 14px; font-weight: bold; }
+.btn-cancel:hover { text-decoration: underline; }
+.btn-save { background: #27ae60; color: white; padding: 10px 24px; border: none; border-radius: 4px; font-weight: bold; font-size: 15px; cursor: pointer; }
+.btn-save:hover { background: #219653; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="form-header">
+        {% if form.instance.pk %}Update Active Patient Profile{% else %}Register Workspace Patient Case{% endif %}
+    </div>
+
+    <!-- The actual interactive form tag -->
+    <form method="POST" novalidate>
+        {% csrf_token %}
+
+        <!-- Loops through the inputs inside your PatientForm class -->
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            
+            {% if field.help_text %}
+            <span class="field-help">{{ field.help_text }}</span>
+            {% endif %}
+            
+            {% for error in field.errors %}
+            <span class="field-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <a href="{% url 'patients:patient_list' %}" class="btn-cancel">Discard Changes</a>
+            <button type="submit" class="btn-save">Commit Record</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

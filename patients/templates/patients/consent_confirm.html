@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Patient Consent | ClinicFlow{% endblock %}
+
+{% block extra_css %}
+.consent-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+.consent-title { font-size: 20px; color: #2c3e50; font-weight: bold; margin: 0; }
+.warning-box { background-color: #fff9db; border-left: 4px solid #f59f00; padding: 15px; border-radius: 4px; margin-bottom: 25px; font-size: 14px; line-height: 1.5; color: #665c33; }
+
+.patient-preview { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 6px; margin-bottom: 25px; }
+.preview-row { display: flex; margin-bottom: 10px; font-size: 15px; }
+.preview-row:last-child { margin-bottom: 0; }
+.preview-label { width: 140px; color: #718096; font-weight: 500; }
+.preview-val { color: #2d3748; font-weight: 600; }
+
+.consent-statement { font-size: 15px; color: #334155; line-height: 1.6; margin-bottom: 30px; }
+
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+.btn-cancel { color: #7f8c8d; text-decoration: none; font-size: 14px; font-weight: bold; }
+.btn-cancel:hover { text-decoration: underline; }
+.btn-confirm { background: #27ae60; color: white; padding: 12px 24px; border: none; border-radius: 4px; font-weight: bold; font-size: 15px; cursor: pointer; transition: background 0.2s; }
+.btn-confirm:hover { background: #219653; }
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="consent-header">
+        <span style="font-size: 24px;">📋</span>
+        <h2 class="consent-title">Patient Records Consent Authorization</h2>
+    </div>
+
+    <!-- Security Context Warning Box -->
+    <div class="warning-box">
+        <strong>Important Action Required:</strong> You are attempting to add a history entry for a patient who has not yet given explicitly logged clinical record sharing authorization. You must document consent verification parameters below before proceeding.
+    </div>
+
+    <!-- Brief Patient Summary Context Panel -->
+    <div class="patient-preview">
+        <div class="preview-row">
+            <div class="preview-label">Patient Name:</div>
+            <div class="preview-val">{{ patient.name }}</div>
+        </div>
+        <div class="preview-row">
+            <div class="preview-label">Patient ID:</div>
+            <div class="preview-val">#{{ patient.id }}</div>
+        </div>
+    </div>
+
+    <p class="consent-statement">
+        By checking the system confirmation action below, you verify that the patient or legal guardian has formally signed the physical **ClinicFlow Information Sharing Authorization Form** allowing staff to update, audit, and log historical clinical health metrics.
+    </p>
+
+    <!-- Post request configuration payload block -->
+    <form method="POST" action="{% url 'patients:consent_confirm' patient.pk %}" novalidate>
+        {% csrf_token %}
+        
+        <div class="form-actions">
+            <a href="{% url 'patients:patient_list' %}" class="btn-cancel">Cancel and Return</a>
+            <button type="submit" class="btn-confirm">Grant Consent & Proceed</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

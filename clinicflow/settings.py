@@ -291,6 +291,6 @@ MAILERS = {
 
 
 # Authentication Core Redirects
-LOGIN_REDIRECT_URL = '/search/history/'
+LOGIN_REDIRECT_URL = '/'
 
 LOGOUT_REDIRECT_URL = '/login/'
