@@ -1,52 +1,194 @@
 {% extends "base.html" %}
 
-{% block title %}ClinicFlow | Clinician Directory{% endblock %}
+{% block title %}ClinicFlow | Medical Staff{% endblock %}
 
 {% block extra_css %}
-.header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.header-actions h2 { color: #2c3e50; margin: 0; }
-.action-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
-.action-btn:hover { background-color: #2980b9; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-.card h4 { margin: 0 0 10px 0; color: #2d3748; font-size: 18px; }
-.card p { margin: 5px 0; color: #4a5568; font-size: 14px; }
-.clinic-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-.tag { font-size: 11px; background: #e2e8f0; padding: 3px 6px; border-radius: 4px; color: #4a5568; font-weight: 500; }
-.edit-link { display: inline-block; margin-top: 10px; color: #3498db; text-decoration: none; font-size: 14px; font-weight: 600; float: right; }
-.edit-link:hover { text-decoration: underline; }
-.empty-box { background-color: #edf2f7; color: #4a5568; padding: 40px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; }
+/* Unified Enterprise Table Design Rules */
+.page-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #edf2f7;
+}
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a202c;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+.staff-matrix-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+.table-staff-registry {
+    width: 100%;
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+.table-staff-registry th {
+    background-color: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #4a5568;
+    padding: 14px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.table-staff-registry td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: #2d3748;
+    border-bottom: 1px solid #f1f5f9;
+}
+.table-staff-registry tr:last-child td {
+    border-bottom: none;
+}
+.table-staff-registry tr:hover td {
+    background-color: #f8fafc;
+}
+.staff-identity-meta {
+    font-weight: 600;
+    color: #1a202c;
+}
+.staff-sub-specialty {
+    font-size: 12px;
+    color: #4b5563;
+    margin-top: 2px;
+}
+.mono-license-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    background-color: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #475569;
+}
+/* Affiliation Badge Layout elements */
+.facility-tag {
+    display: inline-flex;
+    background-color: #eff6ff;
+    color: #1e40af;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    border: 1px solid #bfdbfe;
+}
+.facility-tag.unassigned {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+.btn-action-trigger {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+}
+.empty-registry-state {
+    padding: 60px 20px;
+    text-align: center;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+}
 {% endblock %}
 
 {% block content %}
-<div class="header-actions">
-    <h2>Clinician Operations Roster</h2>
-    <a href="{% url 'clinics:doctor_create' %}" class="action-btn">+ Add Practitioner</a>
-</div>
-
-<div class="grid">
-    {% if doctor_list or doctors %}
-        {% for doc in doctor_list|default:doctors %}
-            <div class="card">
-                <h4>👨‍⚕️ Dr. {{ doc.full_name }}</h4>
-                <p>🩺 <strong>Specialty:</strong> {{ doc.specialization }}</p>
-                <p>📄 <strong>License:</strong> <code>{{ doc.license_number }}</code></p>
-                <p>✉️ <strong>Email:</strong> {{ doc.email|default:"None Listed" }}</p>
-                <div class="clinic-tags">
-                    {% for affiliation in doc.clinic_affiliations.all %}
-                        <span class="tag">🏢 {{ affiliation.clinic.name }}</span>
-                    {% empty %}
-                        <span class="tag" style="background:#fff5f5; color:#c53030;">Unassigned</span>
-                    {% endfor %}
-                </div>
-                <a href="{% url 'clinics:doctor_update' doc.pk %}" class="edit-link">Edit Profile</a>
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-box">
-            <h3>No Practitioners Seeded Yet</h3>
-            <p>Click the button above to register a clinician profile.</p>
-        </div>
+<div class="page-header-container">
+    <h2 class="page-title">Clinician Practitioners Roster</h2>
+    
+    <!-- Role Security Gating Layer -->
+    {% if can_edit %}
+        <a href="{% url 'clinics:doctor_create' %}" class="btn btn-primary d-inline-flex align-items-center font-weight-bold" style="font-size: 14px; padding: 8px 16px; border-radius: 6px;">
+            <i class="bi bi-plus-lg me-2"></i> Add Practitioner
+        </a>
     {% endif %}
 </div>
+
+<!-- Checks your view context parameters safely (handling standard or paginated data pools) -->
+{% if page or doctors %}
+    <div class="staff-matrix-card">
+        <div class="table-responsive">
+            <table class="table table-staff-registry align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Practitioner Details</th>
+                        <th style="width: 20%;">License ID</th>
+                        <th style="width: 20%;">Email Address</th>
+                        <th style="width: 20%;">Assigned Clinic Branches</th>
+                        {% if can_edit %}
+                            <th style="width: 10%; text-align: right;">Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in page %}
+                        <tr>
+                            <td>
+                                <!-- FIX: Removed stray closing div and added proper opening tag with matching class -->
+                                Dr. {{ doc.full_name }}</div>
+                                <div class="staff-sub-specialty"><i class="bi bi-heart-pulse me-1 text-secondary"></i> {{ doc.specialization }}</div>
+                            </td>
+                            <td>
+                                <span class="mono-license-code">{{ doc.license_number }}</span>
+                            </td>
+                            <td>
+                                <span class="text-secondary"><i class="bi bi-envelope me-1"></i></span> {{ doc.email|default:"None Listed" }}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap m-0 p-0">
+                                    {% for affiliation in doc.clinic_affiliations.all %}
+                                        <span class="facility-tag"><i class="bi bi-building me-1" style="font-size: 10px;"></i> {{ affiliation.clinic.name }}</span>
+                                    {% empty %}
+                                        <span class="facility-tag unassigned"><i class="bi bi-exclamation-triangle me-1"></i> Unassigned</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            {% if can_edit %}
+                                <td style="text-align: right;">
+                                    <a href="{% url 'clinics:doctor_update' doc.pk %}" class="btn btn-sm btn-outline-secondary btn-action-trigger">
+                                        Edit
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Render Pagination Nav Bars if your view passes a Paginator instance -->
+    {% if page.has_other_pages %}
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="pagination pagination-sm">
+                {% if page.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+                {% if page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    <div class="empty-registry-state">
+        <div class="text-muted mb-3"><i class="bi bi-person-dash" style="font-size: 48px; color: #94a3b8;"></i></div>
+        <h4 class="font-weight-bold text-dark mb-1">No Practitioners Seeded Yet</h4>
+        <p class="text-secondary small mx-auto mb-0" style="max-width: 400px;">
+            Click the button above to register an active clinician profile into the corporate multi-tenant data logs.
+        </p>
+    </div>
+{% endif %}
 {% endblock %}

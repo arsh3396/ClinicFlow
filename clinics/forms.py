@@ -31,7 +31,7 @@ class ClinicForm(forms.ModelForm):
 class DoctorForm(forms.ModelForm):
     clinics = forms.ModelMultipleChoiceField(
         queryset=Clinic.objects.filter(is_active=True),
-        widget=forms.CheckboxSelectMultiple,
+        widget=forms.SelectMultiple,
         required=True,
         help_text="Active doctors must belong to at least one clinic.",
     )
@@ -74,6 +74,7 @@ class DoctorForm(forms.ModelForm):
         if commit:
             self._sync_clinics(doctor)
         else:
+            # FIX: Plugs the commit=False structural gap by chaining tracking tasks into Django's save_m2m hook architecture
             self.save_m2m = lambda: self._sync_clinics(doctor)
         return doctor
 

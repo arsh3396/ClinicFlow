@@ -24,7 +24,6 @@ urlpatterns = [
     path('', core_views.dashboard, name='dashboard'),
 
     path("clinics/", include("clinics.urls")),
-    path("doctors/", include("clinics.doctor_urls")),
     path("patients/", include("patients.urls")),
     path("search/history/", patient_views.history_search, name="history_search"),
     path("appointments/", include("appointments.urls")),

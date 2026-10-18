@@ -3,40 +3,189 @@
 {% block title %}ClinicFlow | Registered Clinics{% endblock %}
 
 {% block extra_css %}
-.header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.header-area h2 { color: #2c3e50; margin: 0; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-.card h4 { margin: 0 0 10px 0; color: #2d3748; font-size: 18px; }
-.card p { margin: 5px 0; color: #4a5568; font-size: 14px; }
-.badge { display: inline-block; padding: 4px 8px; background: #c6f6d5; color: #22543d; font-size: 12px; font-weight: bold; border-radius: 4px; margin-top: 10px; }
-.badge.inactive { background: #fed7d7; color: #742a2a; }
-.empty-box { background-color: #edf2f7; color: #4a5568; padding: 40px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; }
+/* Enterprise Layout & Clean Typography Variables */
+.page-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #edf2f7;
+}
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a202c;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+.clinic-matrix-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+.table-clinic-registry {
+    width: 100%;
+    margin-bottom: 0;
+    vertical-align: middle;
+}
+.table-clinic-registry th {
+    background-color: #f8fafc;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #4a5568;
+    padding: 14px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.table-clinic-registry td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: #2d3748;
+    border-bottom: 1px solid #f1f5f9;
+}
+.table-clinic-registry tr:last-child td {
+    border-bottom: none;
+}
+.table-clinic-registry tr:hover td {
+    background-color: #f8fafc;
+}
+.clinic-identity-meta {
+    font-weight: 600;
+    color: #1a202c;
+}
+.clinic-sub-address {
+    font-size: 12px;
+    color: #718096;
+    margin-top: 2px;
+}
+.mono-tz-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    background-color: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #475569;
+}
+/* Refined Contextual State Indicators */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+}
+.status-pill.pill-active {
+    background-color: #e6fffa;
+    color: #047481;
+}
+.status-pill.pill-inactive {
+    background-color: #fef2f2;
+    color: #991b1b;
+}
+.btn-action-trigger {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+}
+.empty-registry-state {
+    padding: 60px 20px;
+    text-align: center;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+}
 {% endblock %}
 
 {% block content %}
-<div class="header-area">
-    <h2>Registered Physical Clinics</h2>
-</div>
-
-<div class="grid">
-    {% if clinic_list or clinics %}
-        {% for clinic in clinic_list|default:clinics %}
-            <div class="card">
-                <h4>🏢 {{ clinic.name }}</h4>
-                <p>📍 <strong>Location:</strong> {{ clinic.address_line1 }}, {{ clinic.city }}</p>
-                <p>📞 <strong>Phone:</strong> {{ clinic.phone }}</p>
-                <p>🌐 <strong>Timezone:</strong> <code>{{ clinic.timezone }}</code></p>
-                <span class="badge {% if not clinic.is_active %}inactive{% endif %}">
-                    {% if clinic.is_active %}Active Branch{% else %}Inactive{% endif %}
-                </span>
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-box">
-            <h3>No Clinics Seeded Yet</h3>
-            <p>Go to the Admin Dashboard to register your practice branches.</p>
-        </div>
+<div class="page-header-container">
+    <h2 class="page-title">Physical Branches Registry</h2>
+    
+    <!-- Access matrix gating wrapper -->
+    {% if can_edit %}
+        <a href="{% url 'clinics:create' %}" class="btn btn-primary d-inline-flex align-items-center font-weight-bold" style="font-size: 14px; padding: 8px 16px; border-radius: 6px;">
+            <i class="bi bi-plus-lg me-2"></i> Add Clinic Location
+        </a>
     {% endif %}
 </div>
+
+{% if clinics %}
+    <div class="clinic-matrix-card">
+        <div class="table-responsive">
+            <table class="table table-clinic-registry align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Clinic Details</th>
+                        <th style="width: 20%;">Phone Line</th>
+                        <th style="width: 20%;">Operational Timezone</th>
+                        <th style="width: 10%;">Status</th>
+                        {% if can_edit %}
+                            <th style="width: 15%; text-align: right;">Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for clinic in clinics %}
+                        <tr>
+                            <td>
+                                {{ clinic.name }}</div>
+                                <div class="clinic-sub-address">
+                                    {{ clinic.address_line1 }}{% if clinic.address_line2 %}, {{ clinic.address_line2 }}{% endif %}, {{ clinic.city }}, {{ clinic.postal_code }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-secondary"><i class="bi bi-telephone me-1"></i></span> {{ clinic.phone }}
+                            </td>
+                            <td>
+                                <span class="mono-tz-code">{{ clinic.timezone }}</span>
+                            </td>
+                            <td>
+                                {% if clinic.is_active %}
+                                    <span class="status-pill pill-active">
+                                        <span style="height: 6px; width: 6px; background-color: #047481; border-radius: 50%;"></span> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill pill-inactive">
+                                        <span style="height: 6px; width: 6px; background-color: #991b1b; border-radius: 50%;"></span> Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            {% if can_edit %}
+                                <td style="text-align: right;">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="{% url 'clinics:update' clinic.pk %}" class="btn btn-sm btn-outline-secondary btn-action-trigger">
+                                            Edit
+                                        </a>
+                                        {% if clinic.is_active %}
+                                            <form action="{% url 'clinics:deactivate' clinic.pk %}" method="POST" class="m-0 p-0" onsubmit="return confirm('Confirm soft-deactivation of {{ clinic.name|escapejs }}? This location will be barred from future booking dropdown structures.');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger btn-action-trigger">
+                                                    Deactivate
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="empty-registry-state">
+        <div class="text-muted mb-3"><i class="bi bi-building-dash" style="font-size: 48px; color: #94a3b8;"></i></div>
+        <h4 class="font-weight-bold text-dark mb-1">No Medical Branches Registered</h4>
+        <p class="text-secondary small max-width-auto mx-auto mb-0" style="max-width: 400px;">
+            There are currently no locations matching your authorized user configuration parameters. Use the generation interface panel to add branches.
+        </p>
+    </div>
+{% endif %}
 {% endblock %}

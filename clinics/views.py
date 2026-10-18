@@ -18,6 +18,7 @@ from clinicflow.access import (
 
 from .forms import ClinicForm, DoctorForm
 from .models import Clinic, Doctor
+from django.db import models 
 
 
 def _forbidden(request: HttpRequest) -> HttpResponse:
@@ -43,7 +44,7 @@ def clinic_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Clinic created.")
-        return redirect("clinics:list")
+        return redirect("clinics:clinic_list")
     return render(request, "clinics/clinic_form.html", {"form": form, "title": "Add clinic"})
 
 
@@ -57,7 +58,7 @@ def clinic_update(request: HttpRequest, pk: int) -> HttpResponse:
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Clinic updated.")
-        return redirect("clinics:list")
+        return redirect("clinics:clinic_list")
     return render(
         request,
         "clinics/clinic_form.html",
@@ -74,7 +75,7 @@ def clinic_deactivate(request: HttpRequest, pk: int) -> HttpResponse:
     clinic.is_active = False
     clinic.save(update_fields=["is_active", "updated_at"])
     messages.success(request, f"{clinic.name} deactivated. Existing appointments remain visible.")
-    return redirect("clinics:list")
+    return redirect("clinics:clinic_list")
 
 
 @login_required
@@ -112,7 +113,7 @@ def doctor_create(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Doctor profile created.")
-        return redirect("doctors:list")
+        return redirect("clinics:doctor_list")
     return render(request, "clinics/doctor_form.html", {"form": form, "title": "Add doctor"})
 
 
@@ -154,7 +155,7 @@ def doctor_update(request: HttpRequest, pk: int) -> HttpResponse:
         else:
             form.save()
             messages.success(request, "Doctor profile updated.")
-            return redirect("doctors:list")
+            return redirect("clinics:doctor_list")
             
     return render(
         request,
