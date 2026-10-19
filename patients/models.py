@@ -142,3 +142,18 @@ class MedicalHistoryEntry(models.Model):
 
     def __str__(self) -> str:
         return f"History #{self.pk} for {self.patient_id}"
+
+class AuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('CONSENT_TOGGLE', 'Consent Status Changed'),
+        ('HISTORY_VIEW', 'Medical History Accessed'),
+        ('HISTORY_ADD', 'Medical History Entry Added'),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="patient_audit_logs")
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="audit_logs")
+    action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    details = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-timestamp"]

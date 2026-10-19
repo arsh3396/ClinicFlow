@@ -13,19 +13,27 @@
 
 .privacy-banner { background-color: #fdf0dc; border-left: 4px solid #b45309; padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
 .privacy-text { color: #b45309; font-size: 14px; font-weight: 500; }
-.btn-toggle { background: #b45309; color: white; text-decoration: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; }
+.btn-toggle { background: #b45309; color: white; text-decoration: none; padding: 6px 14px; border-radius: 4px; font-size: 13px; font-weight: bold; border: none; cursor: pointer; display: inline-block; }
 .btn-toggle:hover { background: #92400e; }
 .btn-toggle.active { background: #27ae60; }
 .btn-toggle.active:hover { background: #219653; }
+.btn-book { background: #3498db; color: white; text-decoration: none; padding: 8px 18px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block; }
+.btn-book:hover { background: #2980b9; }
 
-.history-section { margin-top: 30px; }
+.history-section, .appointment-section { margin-top: 35px; }
 .section-title { font-size: 18px; color: #2c3e50; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
 .locked-box { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 30px; text-align: center; border-radius: 8px; color: #718096; font-size: 14px; font-weight: 500; }
 .entry-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 15px; }
 .entry-meta { font-size: 12px; color: #718096; margin-bottom: 8px; display: flex; justify-content: space-between; }
 .entry-notes { font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-line; }
 
-.footer-nav { display: flex; justify-content: space-between; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+.appt-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+.appt-table th, .appt-table td { padding: 10px; border: 1px solid #e2e8f0; text-align: left; }
+.appt-table th { background: #f8fafc; color: #4a5568; }
+.appt-link { color: #3498db; text-decoration: none; font-weight: bold; }
+.appt-link:hover { text-decoration: underline; }
+
+.footer-nav { display: flex; justify-content: space-between; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; align-items: center; }
 .btn-back { color: #7f8c8d; text-decoration: none; font-weight: bold; padding: 8px 12px; font-size: 14px; }
 .btn-back:hover { text-decoration: underline; }
 .btn-action-edit { background: #f39c12; color: white; text-decoration: none; padding: 8px 18px; border-radius: 4px; font-weight: bold; font-size: 14px; }
@@ -36,19 +44,25 @@
 <div class="card">
     <div class="detail-header">
         <h3>Patient Record Summary</h3>
-        <span class="id-badge">ID: {{ patient.id }}</span>
+        <div>
+            {% if can_book %}
+                <a href="{% url 'appointments:appointment_create' %}?patient_id={{ patient.id }}" class="btn-book" style="margin-right: 10px;">📅 Book Appointment</a>
+
+            {% endif %}
+            <span class="id-badge">ID: {{ patient.id }}</span>
+        </div>
     </div>
 
     <!-- Demographics Grid -->
     <div class="info-grid">
         <div class="info-label">Full Legal Name:</div>
-        <div class="info-val">{{ patient.first_name }} {{ patient.last_name }}</div>
+        <div class="info-val">{{ patient.name }}</div>
 
         <div class="info-label">Age / Gender:</div>
-        <div class="info-val">{{ patient.date_of_birth|timesince }} yrs / {{ patient.gender }}</div>
+        <div class="info-val">{{ patient.age }} yrs / {{ patient.get_gender_display }}</div>
 
         <div class="info-label">Primary Contact:</div>
-        <div class="info-val">{{ patient.phone_number }}</div>
+        <div class="info-val">{{ patient.phone }}</div>
 
         <div class="info-label">Email Address:</div>
         <div class="info-val">{{ patient.email|default:"Not provided" }}</div>
@@ -64,55 +78,99 @@
     </div>
 
     <!-- Section 6: Dynamic Privacy Consent Handshake Banner -->
-    <div class="privacy-banner" style="{% if patient.consent_given %}background-color: #d9f0ec; border-left-color: #0f766e;{% endif %}">
-        <div class="privacy-text" style="{% if patient.consent_given %}color: #0f766e;{% endif %}">
-            {% if patient.consent_given %}
-                🔒 <strong>Patient privacy consent is active.</strong> Historical logs are visible to authorized staff.
-            {% else %}
-                ⚠️ <strong>Information sharing consent missing.</strong> Medical details are hidden.
-            {% endif %}
+    {% if can_toggle_consent %}
+        <div class="privacy-banner" style="{% if patient.consent_given %}background-color: #d9f0ec; border-left-color: #0f766e;{% endif %}">
+            <div class="privacy-text" style="{% if patient.consent_given %}color: #0f766e;{% endif %}">
+                {% if patient.consent_given %}
+                    🔒 <strong>Patient privacy consent is active.</strong> Historical logs are visible to authorized staff.
+                {% else %}
+                    ⚠️ <strong>Information sharing consent missing.</strong> Medical details are hidden.
+                {% endif %}
+            </div>
+            <a href="{% url 'patients:consent_confirm' patient.pk %}" class="btn-toggle {% if patient.consent_given %}active{% endif %}">
+                {% if patient.consent_given %}Revoke Consent{% else %}Grant Consent{% endif %}
+            </a>
         </div>
-        <a href="{% url 'patients:consent_confirm' patient.pk %}" class="btn-toggle {% if patient.consent_given %}active{% endif %}">
-            {% if patient.consent_given %}Revoke Consent{% else %}Grant Consent{% endif %}
-        </a>
-    </div>
+    {% endif %}
 
     <!-- Section 6 & 7: Consent-Gated EHR History Workspace -->
-    <div class="history-section">
-        <div class="section-title">Clinical Medical History (EHR-Lite)</div>
-        
-        {% if patient.consent_given %}
-            <!-- Loop through entries securely mapped from the view context -->
-            {% for entry in medical_history %}
-                <div class="entry-card">
-                    <div class="entry-meta">
-                        <span>Recorded by <strong>Dr. {{ entry.author.name }}</strong> ({{ entry.clinic.name }})</span>
-                        <span>{{ entry.recorded_at|date:"Y-m-d H:i" }}</span>
-                    </div>
-                    <div class="entry-notes">{{ entry.notes }}</div>
-                </div>
-            {% empty %}
-                <div class="locked-box" style="border-style: solid;">No active historical logs recorded for this patient file.</div>
-            {% endfor %}
+    {% if show_history_panel %}
+        <div class="history-section">
+            <div class="section-title">Clinical Medical History (EHR-Lite)</div>
             
-            <!-- Allow clinical notes additions if user role is Doctor, Admin, or Clinic Admin -->
-            {% if request.user.groups.all or request.user.is_superuser %}
-                <div style="margin-top: 20px; text-align: right;">
-                    <a href="#" class="btn-toggle active" style="text-decoration: none; padding: 10px 20px;">+ Append Clinical Entry</a>
+            {% if patient.consent_given %}
+                <!-- Loop through entries securely mapped from the view context -->
+                {% for entry in history_entries %}
+                    <div class="entry-card">
+                        <div class="entry-meta">
+                            <span>Recorded by <strong>Dr. {{ entry.author.full_name|default:"Unknown Clinician" }}</strong> ({{ entry.clinic.name|default:"Main Branch" }})</span>
+                            <span>{{ entry.recorded_at|date:"Y-m-d H:i" }}</span>
+                        </div>
+                        <div class="entry-notes">{{ entry.entry_text }}</div>
+                    </div>
+                {% empty %}
+                    <div class="locked-box" style="border-style: solid;">No active historical logs recorded for this patient file.</div>
+                {% endfor %}
+                
+                <!-- Inline Form/Link for new entries if authorized -->
+                {% if can_add_history and history_form %}
+                    <div style="margin-top: 20px; background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                        <h4>Add New Medical Entry</h4>
+                        <form method="POST" action="{% url 'patients:history_create' patient.pk %}">
+                            {% csrf_token %}
+                            {{ history_form.as_p }}
+                            <button type="submit" class="btn-toggle active" style="margin-top: 10px;">Save Clinical Entry</button>
+                        </form>
+                    </div>
+                {% endif %}
+                
+            {% else %}
+                <!-- Section 6 Mandatory Hidden Panel Warning Statement -->
+                <div class="locked-box">
+                    🔒 {{ history_error_message }}
                 </div>
             {% endif %}
-            
+        </div>
+    {% endif %}
+
+    <!-- Appointment History Log Integration Rows -->
+    <div class="appointment-section">
+        <div class="section-title">Appointment History Timeline</div>
+        {% if appointments %}
+            <table class="appt-table">
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Clinician</th>
+                        <th>Location Clinic</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt.scheduled_at|date:"Y-m-d H:i" }}</td>
+                            <td>Dr. {{ appt.doctor.full_name }}</td>
+                            <td>{{ appt.clinic.name }}</td>
+                            <td>{{ appt.status }}</td>
+                            <td>
+                                <a href="{% url 'appointments:detail' appt.pk %}" class="appt-link">View Details &rarr;</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% else %}
-            <!-- Section 6 Mandatory Hidden Panel Warning Statement -->
-            <div class="locked-box">
-                🔒 Medical history hidden: patient consent not given.
-            </div>
+            <div class="locked-box" style="border-style: solid;">No tracked schedule timeline available for this individual.</div>
         {% endif %}
     </div>
 
     <div class="footer-nav">
         <a href="{% url 'patients:patient_list' %}" class="btn-back">← Back to Workspace Records</a>
-        <a href="{% url 'patients:patient_update' patient.pk %}" class="btn-action-edit">Modify Records</a>
+        {% if can_edit %}
+            <a href="{% url 'patients:patient_update' patient.pk %}" class="btn-action-edit">Modify Records</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

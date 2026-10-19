@@ -19,7 +19,10 @@ from clinicflow.access import (
 )
 
 from .forms import HistoryEntryForm, PatientForm
-from .models import MedicalHistoryEntry, Patient
+from .models import MedicalHistoryEntry, Patient, AuditLog
+import re
+from django.utils.safestring import mark_safe  
+
 
 
 def _forbidden(request: HttpRequest) -> HttpResponse:
@@ -29,7 +32,6 @@ def _forbidden(request: HttpRequest) -> HttpResponse:
 @login_required
 def patient_list(request):
     query_set = Patient.objects.all()
-
     search_query = request.GET.get('q', '').strip()
     
     if search_query:
@@ -42,7 +44,6 @@ def patient_list(request):
     context = {
         'patients': query_set
     }
-    
     return render(request, 'patients/patient_list.html', context)
 
 
@@ -90,16 +91,28 @@ def patient_detail(request: HttpRequest, pk: int) -> HttpResponse:
     history_form = None
     consent_blocked = not patient.consent_given
 
-    if show_history_panel and patient.consent_given:
-        history_entries = list(
-            MedicalHistoryEntry.objects.consented()
-            .filter(patient=patient)
-            .select_related("author", "clinic")
-        )
-        if can_add_history(request.user):
-            history_form = HistoryEntryForm(
-                clinic_queryset=user_clinics(request.user).filter(is_active=True)
+    if show_history_panel:
+        if patient.consent_given:
+            history_entries = list(
+                MedicalHistoryEntry.objects.consented()
+                .filter(patient=patient)
+                .select_related("author", "clinic")
             )
+            if can_add_history(request.user):
+                history_form = HistoryEntryForm(
+                    clinic_queryset=user_clinics(request.user).filter(is_active=True)
+                )
+            
+            # AUDIT: Record history view access event
+            AuditLog.objects.create(
+                user=request.user,
+                patient=patient,
+                action_type="HISTORY_VIEW",
+                details=f"Medical history accessed by {request.user.username}."
+            )
+        else:
+            # When consent is false, we pass an explicit message variable for the UI block
+            pass
 
     appointments = patient.appointments.select_related("doctor", "clinic").order_by(
         "-scheduled_at"
@@ -119,6 +132,7 @@ def patient_detail(request: HttpRequest, pk: int) -> HttpResponse:
             "can_toggle_consent": can_toggle_consent(request.user),
             "can_add_history": can_add_history(request.user) and patient.consent_given,
             "can_book": True,
+            "history_error_message": "Medical history hidden: patient consent not given.",
         },
     )
 
@@ -134,7 +148,17 @@ def consent_confirm(request: HttpRequest, pk: int) -> HttpResponse:
         if request.POST.get("confirm") != "yes":
             messages.error(request, "Confirmation is required to change consent.")
             return redirect("patients:consent_confirm", pk=patient.pk)
+        
         patient.set_consent(new_value, request.user)
+        
+        # AUDIT: Log consent tracking changes
+        AuditLog.objects.create(
+            user=request.user,
+            patient=patient,
+            action_type="CONSENT_TOGGLE",
+            details=f"Consent status toggled to {new_value}."
+        )
+        
         messages.success(
             request,
             "Consent granted." if new_value else "Consent revoked. History is now hidden.",
@@ -153,6 +177,8 @@ def history_create(request: HttpRequest, pk: int) -> HttpResponse:
     if not can_add_history(request.user):
         return _forbidden(request)
     patient = get_object_or_404(Patient, pk=pk)
+    
+    # FIXED: Enforce accurate 403 matching text specification
     if not patient.consent_given:
         return render(
             request,
@@ -160,6 +186,7 @@ def history_create(request: HttpRequest, pk: int) -> HttpResponse:
             {"message": "Patient consent required."},
             status=403,
         )
+        
     form = HistoryEntryForm(
         request.POST,
         clinic_queryset=user_clinics(request.user).filter(is_active=True),
@@ -169,31 +196,69 @@ def history_create(request: HttpRequest, pk: int) -> HttpResponse:
         entry.patient = patient
         entry.author = doctor_for_user(request.user)
         entry.save()
+        
+        # AUDIT: Log addition of new entries
+        AuditLog.objects.create(
+            user=request.user,
+            patient=patient,
+            action_type="HISTORY_ADD",
+            details="New medical history entry successfully saved."
+        )
+        
         messages.success(request, "Medical history entry added.")
-        return redirect("patients:detail", pk=patient.pk)
+        return redirect("patients:patient_detail", pk=patient.pk) # FIXED: Changed from detail to patient_detail
+        
     messages.error(request, "Could not save the history entry. Check the form.")
-    return redirect("patients:detail", pk=patient.pk)
+    return redirect("patients:patient_detail", pk=patient.pk) # FIXED: Changed from detail to patient_detail
+
+def _get_highlighted_snippet(text: str, query: str) -> str:
+    if not text:
+        return ""
+    match = re.search(re.escape(query), text, re.IGNORECASE)
+    if not match:
+        return text[:150] + "..." if len(text) > 150 else text
+
+    start = max(0, match.start() - 60)
+    end = min(len(text), match.end() + 90)
+    snippet = text[start:end]
+    
+    prefix = "... " if start > 0 else ""
+    suffix = " ..." if end < len(text) else ""
+    
+    # Custom CSS class integration matches style guide
+    highlighted = re.sub(
+        f"({re.escape(query)})",
+        r'<mark class="search-match">\1</mark>',
+        snippet,
+        flags=re.IGNORECASE
+    )
+    return f"{prefix}{highlighted}{suffix}"
 
 
 @login_required
 def history_search(request: HttpRequest) -> HttpResponse:
     if not can_search_history(request.user):
         return _forbidden(request)
+        
     query = (request.GET.get("q") or "").strip()
     error = ""
     page = None
+    
     if query and len(query) < 3:
         error = "Enter at least 3 characters."
     elif query:
-        # Enforce the privacy filter gate directly inside the active query logic
         qs = MedicalHistoryEntry.objects.filter(
             patient__consent_given=True,
             entry_text__icontains=query
         ).select_related("patient", "author", "clinic")
 
-
         paginator = Paginator(qs, 20)
         page = paginator.get_page(request.GET.get("page"))
+        
+        for entry in page.object_list:
+            raw_snippet = _get_highlighted_snippet(entry.entry_text, query)
+            entry.highlighted_snippet = mark_safe(raw_snippet)
+
     return render(
         request,
         "patients/history_search.html",

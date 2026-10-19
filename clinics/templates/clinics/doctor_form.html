@@ -14,7 +14,12 @@
 .save-btn:hover { background-color: #27ae60; }
 .cancel-link { padding: 12px 24px; background-color: #edf2f7; border: 1px solid #cbd5e0; border-radius: 4px; color: #4a5568; text-decoration: none; font-weight: bold; font-size: 15px; text-align: center; display: inline-block; box-sizing: border-box; }
 .cancel-link:hover { background-color: #e2e8f0; }
-.errorlist { background-color: #fff5f5; color: #c53030; padding: 10px; border-radius: 4px; list-style-type: none; margin: 0 0 20px 0; font-size: 14px; border: 1px solid #fed7d7; }
+.errorlist { background-color: #fff5f5; color: #c53030; padding: 15px; border-radius: 4px; list-style-type: none; margin: 0 0 20px 0; font-size: 14px; border: 1px solid #fed7d7; }
+.error-msg { margin: 5px 0 0 0; }
+.conflict-list { margin-top: 10px; padding-left: 20px; }
+.conflict-item { margin-bottom: 8px; color: #2d3748; }
+.conflict-link { color: #c53030; font-weight: bold; text-decoration: underline; margin-left: 5px; }
+.conflict-link:hover { color: #9b2c2c; }
 {% endblock %}
 
 {% block content %}
@@ -28,6 +33,28 @@
             <div class="errorlist">
                 <strong>Please resolve the form compilation issues below:</strong>
                 {{ form.non_field_errors }}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <p class="error-msg"><strong>{{ field.label }}:</strong> {{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# Visual Blocker: Render conflicting future appointments dynamically #}
+        {% if blocking_appointments %}
+            <div class="errorlist">
+                <strong>Action Blocked:</strong> Cannot unlink clinics that still have future scheduled appointments. Please manage or reschedule them:
+                <ul class="conflict-list">
+                    {% for appt in blocking_appointments %}
+                        <li class="conflict-item">
+                            Appointment at <strong>{{ appt.clinic.name }}</strong> on {{ appt.scheduled_at|date:"M d, Y h:i A" }}
+                            <a href="{% url 'appointments:detail' appt.pk %}" class="conflict-link" target="_blank">
+                                View Appointment Detail &rarr;
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
         {% endif %}
         

@@ -69,7 +69,7 @@
             <tr>
                 <td><strong>{{ appt.scheduled_at|date:"H:i" }}</strong></td>
                 <td><a href="{% url 'patients:patient_detail' appt.patient.pk %}" style="color:#2c3e50; font-weight:600;">{{ appt.patient.name }}</a></td>
-                <td>Dr. {{ appt.doctor.name }}</td>
+                <td>Dr. {{ appt.doctor.full_name }}</td>
                 <td>{{ appt.clinic.name }}</td>
                 <td><span class="badge {% if appt.status == 'SCHEDULED' %}bg-sched{% elif appt.status == 'COMPLETED' %}bg-comp{% elif appt.status == 'CANCELLED' %}bg-canc{% else %}bg-noshow{% endif %}">{{ appt.status }}</span></td>
             </tr>

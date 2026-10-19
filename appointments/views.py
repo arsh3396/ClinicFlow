@@ -73,10 +73,20 @@ def appointment_list(request: HttpRequest) -> HttpResponse:
 def appointment_create(request: HttpRequest) -> HttpResponse:
     if not can_book_appointments(request.user):
         return _forbidden(request)
+        
     initial = {}
-    if request.GET.get("patient"):
-        initial["patient"] = request.GET.get("patient")
+    
+    patient_id = request.GET.get("patient_id")
+    if patient_id:
+        initial["patient"] = patient_id
+        
+    if request.GET.get("doctor_id"):
+        initial["doctor"] = request.GET.get("doctor_id")
+    if request.GET.get("clinic_id"):
+        initial["clinic"] = request.GET.get("clinic_id")
+
     form = AppointmentForm(request.POST or None, user=request.user, initial=initial)
+    
     if request.method == "POST" and form.is_valid():
         appointment = form.save(commit=False)
         appointment.created_by = request.user
@@ -85,6 +95,7 @@ def appointment_create(request: HttpRequest) -> HttpResponse:
         appointment.save()
         messages.success(request, "Appointment booked.")
         return redirect("appointments:detail", pk=appointment.pk)
+        
     return render(
         request,
         "appointments/appointment_form.html",
@@ -192,19 +203,18 @@ def daily_schedule(request: HttpRequest) -> HttpResponse:
         },
     )
 
+
 @login_required
 def appointment_update(request, pk):
     appointment = get_object_or_404(Appointment, pk=pk)
     
     if request.method == 'POST':
-        # Pass the logged-in request.user parameter to satisfy Cursor's custom __init__ method signatures
         form = AppointmentForm(request.POST, instance=appointment, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, f"Appointment #{appointment.id} successfully rescheduled!")
-            return redirect('appointments:appointment_detail', pk=appointment.pk)
+            return redirect('appointments:detail', pk=appointment.pk)
     else:
-        # Initialize the GET request state mapping out localized clinic variables
         form = AppointmentForm(instance=appointment, user=request.user)
         
     return render(request, 'appointments/appointment_form.html', {

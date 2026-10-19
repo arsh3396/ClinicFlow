@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import models
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -18,7 +19,6 @@ from clinicflow.access import (
 
 from .forms import ClinicForm, DoctorForm
 from .models import Clinic, Doctor
-from django.db import models 
 
 
 def _forbidden(request: HttpRequest) -> HttpResponse:
@@ -98,7 +98,7 @@ def _blocking_future_appointments(doctor: Doctor, clinic_ids_to_remove: set[int]
         clinic_id__in=clinic_ids_to_remove,
         status=AppointmentStatus.SCHEDULED,
         scheduled_at__gte=timezone.now(),
-    )
+    ).select_related("clinic")  # Performance optimization for displaying clinic names in UI
 
 
 @login_required
@@ -138,19 +138,19 @@ def doctor_update(request: HttpRequest, pk: int) -> HttpResponse:
         clinic_queryset=allowed_clinics.distinct(),
     )
     
+    blocking_appointments = None
+    
     if request.method == "POST" and form.is_valid():
         selected_ids = {c.pk for c in form.cleaned_data["clinics"]}
-        
         current_ids = {c.pk for c in doctor.clinics.all()}
         
         removing = current_ids - selected_ids
-        blocking = _blocking_future_appointments(doctor, removing)
+        blocking_appointments = _blocking_future_appointments(doctor, removing)
         
-        if blocking.exists():
+        if blocking_appointments.exists():
             form.add_error(
                 "clinics",
-                "Cannot unlink clinics that still have future scheduled appointments: "
-                + ", ".join(f"#{a.pk}" for a in blocking[:8]),
+                "Cannot unlink clinics that still have future scheduled appointments.",
             )
         else:
             form.save()
@@ -160,5 +160,10 @@ def doctor_update(request: HttpRequest, pk: int) -> HttpResponse:
     return render(
         request,
         "clinics/doctor_form.html",
-        {"form": form, "title": "Edit doctor", "doctor": doctor},
+        {
+            "form": form, 
+            "title": "Edit doctor", 
+            "doctor": doctor,
+            "blocking_appointments": blocking_appointments,  # Passed directly to template context
+        },
     )

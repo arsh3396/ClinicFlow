@@ -57,10 +57,8 @@ class DoctorForm(forms.ModelForm):
         if clinic_queryset is not None:
             self.fields["clinics"].queryset = clinic_queryset
         if self.instance.pk:
-            # Prefetch clinic affiliations cache data to minimize database overhead loops
             self.fields["clinics"].initial = self.instance.clinics.all()
             
-            # Pre-populate the input fields with current consulting days if uniform
             first_link = self.instance.clinic_affiliations.first()
             if first_link and not self.files and not self.data:
                 self.initial["consulting_days"] = first_link.consulting_days
@@ -74,7 +72,6 @@ class DoctorForm(forms.ModelForm):
         if commit:
             self._sync_clinics(doctor)
         else:
-            # FIX: Plugs the commit=False structural gap by chaining tracking tasks into Django's save_m2m hook architecture
             self.save_m2m = lambda: self._sync_clinics(doctor)
         return doctor
 

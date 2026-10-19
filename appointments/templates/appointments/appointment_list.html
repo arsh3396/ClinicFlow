@@ -28,7 +28,7 @@ td { padding: 15px 20px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
 </div>
 
 <div class="table-card">
-    {% if appointments or appointment_list %}
+    {% if page.object_list %}
         <table>
             <thead>
                 <tr>
@@ -42,7 +42,7 @@ td { padding: 15px 20px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
                 </tr>
             </thead>
             <tbody>
-                {% for appt in appointments|default:appointment_list %}
+                {% for appt in page %}
                     <tr>
                         <td><strong>{{ appt.patient.last_name }}, {{ appt.patient.first_name }}</strong></td>
                         <td>Dr. {{ appt.doctor.full_name }}</td>
@@ -56,11 +56,26 @@ td { padding: 15px 20px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
                                 {% if appt.reminder_sent %}Sent{% else %}Pending{% endif %}
                             </span>
                         </td>
-                        <td><a href="{% url 'appointments:appointment_detail' appt.pk %}" class="view-link">Open Chart</a></td>
+                        <td><a href="{% url 'appointments:detail' appt.pk %}" class="view-link">Open Chart</a></td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+    {% if page.has_other_pages %}
+        <div class="pagination" style="margin-top: 15px; text-align: center;">
+            {% if page.has_previous %}
+                <a href="?page={{ page.previous_page_number }}{% if filters.clinic %}&clinic={{ filters.clinic }}{% endif %}{% if filters.doctor %}&doctor={{ filters.doctor }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.from %}&from={{ filters.from }}{% endif %}{% if filters.to %}&to={{ filters.to }}{% endif %}">&laquo; Previous</a>
+            {% endif %}
+            
+            <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+            
+            {% if page.has_next %}
+                <a href="?page={{ page.next_page_number }}{% if filters.clinic %}&clinic={{ filters.clinic }}{% endif %}{% if filters.doctor %}&doctor={{ filters.doctor }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.from %}&from={{ filters.from }}{% endif %}{% if filters.to %}&to={{ filters.to }}{% endif %}">Next &raquo;</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
     {% else %}
         <div style="padding: 40px; text-align: center; color: #718096;">
             <h3>No Scheduled Appointments Found</h3>

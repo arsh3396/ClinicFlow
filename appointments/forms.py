@@ -33,7 +33,23 @@ class AppointmentForm(forms.ModelForm):
         if self.instance.pk and self.instance.clinic_id:
             clinics = (clinics | Clinic.objects.filter(pk=self.instance.clinic_id)).distinct()
         self.fields["clinic"].queryset = clinics
-        self.fields["doctor"].queryset = scoped_doctors(user).filter(is_active=True)
+        
+        # FIXED: Dynamic Clinic Filter Check for Doctor Field Pool
+        # If the form is processing incoming POST data, filter doctor options down to that chosen clinic branch immediately.
+        if self.is_bound and self.data.get("clinic"):
+            try:
+                clinic_id = int(self.data.get("clinic"))
+                self.fields["doctor"].queryset = scoped_doctors(user).filter(
+                    clinic_affiliations__clinic_id=clinic_id,
+                    is_active=True
+                ).distinct()
+            except (ValueError, TypeError):
+                self.fields["doctor"].queryset = scoped_doctors(user).filter(is_active=True)
+        elif self.instance.pk and self.instance.clinic:
+            self.fields["doctor"].queryset = self.instance.clinic.doctors.filter(is_active=True)
+        else:
+            self.fields["doctor"].queryset = scoped_doctors(user).filter(is_active=True)
+            
         self.fields["patient"].queryset = Patient.objects.all()
         if self.instance.pk and self.instance.scheduled_at:
             tz = ZoneInfo(self.instance.clinic.timezone)
@@ -52,7 +68,8 @@ class AppointmentForm(forms.ModelForm):
             self.add_error("clinic", "Inactive clinics cannot be used for new bookings.")
 
         if clinic and doctor and not doctor.clinics.filter(pk=clinic.pk).exists():
-            self.add_error("doctor", "Selected doctor is not linked to the chosen clinic.")
+            # FIXED: Updated validation text string to match Section 8 constraints exactly
+            self.add_error("doctor", "Doctor not linked to the clinic.")
 
         if doctor and not doctor.is_active:
             self.add_error("doctor", "Doctor is not active.")
@@ -63,7 +80,8 @@ class AppointmentForm(forms.ModelForm):
             aware = naive.replace(tzinfo=tz)
             utc_dt = aware.astimezone(ZoneInfo("UTC"))
             if utc_dt < timezone.now():
-                self.add_error("scheduled_local", "Appointment time cannot be in the past.")
+                # FIXED: Updated string constraint message to match Section 8 requirements
+                self.add_error("scheduled_local", "Past date.")
             else:
                 cleaned["scheduled_at"] = utc_dt
                 if doctor:
@@ -78,6 +96,7 @@ class AppointmentForm(forms.ModelForm):
                     for other in qs.only("scheduled_at", "duration_minutes"):
                         other_end = other.scheduled_at + timedelta(minutes=other.duration_minutes)
                         if start < other_end and other.scheduled_at < end:
+                            # FIXED: Enforced the exact specified string constraint message 
                             self.add_error(
                                 "scheduled_local",
                                 "Doctor already booked at this time.",
