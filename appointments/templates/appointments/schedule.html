@@ -1,43 +1,89 @@
 {% extends "base.html" %}
 
-{% block title %}ClinicFlow | Workspace Dashboard{% endblock %}
+{% block title %}ClinicFlow | Daily Practitioner Timeline Workspace{% endblock %}
 
 {% block extra_css %}
-.welcome-banner { background-color: #2c3e50; color: white; padding: 25px 30px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-.welcome-banner h2 { margin: 0 0 5px 0; font-size: 24px; }
-.welcome-banner p { margin: 0; opacity: 0.8; font-size: 14px; }
-.actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-.control-card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center; transition: transform 0.2s; }
-.control-card:hover { transform: translateY(-2px); }
-.control-card h4 { margin: 0 0 10px 0; color: #2d3748; font-size: 18px; }
-.control-card p { margin: 0 0 20px 0; color: #718096; font-size: 13px; line-height: 1.5; }
-.control-btn { display: block; padding: 10px 15px; background-color: #3498db; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
-.control-btn:hover { background-color: #2980b9; }
+.timeline-container { background: #f8fafc; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+.filter-bar { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+.timeline-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.timeline-header { background: #2c3e50; color: white; padding: 15px 20px; font-weight: 600; }
+.doctor-row { display: flex; border-bottom: 1px solid #edf2f7; min-height: 90px; align-items: center; }
+.doctor-row:last-child { border-bottom: none; }
+.doctor-meta { width: 220px; min-width: 220px; padding: 15px 20px; background: #f7fafc; border-right: 1px solid #edf2f7; font-weight: bold; color: #2d3748; }
+.doctor-meta small { display: block; font-weight: normal; color: #718096; margin-top: 2px; }
+.slots-container { display: flex; flex-wrap: wrap; gap: 10px; padding: 15px 20px; flex-grow: 1; }
+.appointment-block { background: #e0f2fe; border: 1px solid #bae6fd; border-left: 4px solid #3498db; border-radius: 6px; padding: 8px 15px; color: #0369a1; text-decoration: none; min-width: 160px; transition: all 0.2s; }
+.appointment-block:hover { background: #bae6fd; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); color: #0369a1; }
+.appointment-time { display: block; font-weight: bold; font-size: 13px; }
+.patient-name { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-timeline { padding: 30px; text-align: center; color: #718096; font-style: italic; }
+.btn-back { background-color: #718096; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+.btn-back:hover { background-color: #4a5568; color: white; }
 {% endblock %}
 
 {% block content %}
-<div class="welcome-banner">
-    <h2>ClinicFlow Central Administration Hub</h2>
-    <p>Operational Release Suite v1.0 • Privacy Firewall Mode: Active • Task Broker Connection: Redis Engine Standard</p>
-</div>
+<div class="timeline-container">
+    <a href="{% url 'appointments:workspace_dashboard' %}" class="btn-back">← Back to Dashboard Hub</a>
+    
+    <div class="filter-bar">
+        <form method="GET" action="{% url 'appointments:schedule' %}" class="row g-3" id="timelineFilterForm">
+            <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+                
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4a5568;">Clinic Branch Office</label>
+                    <select name="clinic" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e0;" onchange="document.getElementById('timelineFilterForm').submit();">
+                        {% for c in clinics %}
+                            <option value="{{ c.pk }}" {% if clinic and c.pk == clinic.pk %}selected{% endif %}>{{ c.name }}</option>
+                        {% empty %}
+                            <option value="">No clinics assigned to your account profile</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-<div class="actions-grid">
-    <div class="control-card">
-        <h4>🗓️ Scheduling Center</h4>
-        <p>Review the comprehensive appointment matrix, adjust consulting slots, and track background message states.</p>
-        <a href="{% url 'appointments:appointment_list' %}" class="control-btn">Open Matrix View</a>
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 6px; color: #4a5568;">Target Date</label>
+                    <input type="date" name="date" value="{{ date_str }}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e0;" onchange="document.getElementById('timelineFilterForm').submit();">
+                </div>
+
+                {% if not is_doctor %}
+                <div>
+                    <a href="{% url 'appointments:schedule' %}?clinic={{ clinic.pk }}&date={{ date_str }}" style="padding: 9px 15px; background-color: #edf2f7; color: #4a5568; text-decoration: none; border-radius: 4px; border: 1px solid #cbd5e0; font-size: 14px; font-weight: bold;">Clear Staff Filter</a>
+                </div>
+                {% endif %}
+
+            </div>
+        </form>
     </div>
 
-    <div class="control-card">
-        <h4>🕵️‍♂️ Patient Record Search</h4>
-        <p>Query Electronic Health Records through a secure, privacy-firewalled layer based on explicit consent flags.</p>
-        <a href="/search/history/" class="control-btn">Launch Secure Search</a>
-    </div>
+    <div class="timeline-card">
+        <div class="timeline-header">
+            📅 Consultation Schedule Matrix Scope: {{ day|date:"F d, Y" }} {% if clinic %}({{ clinic.name }}){% endif %}
+        </div>
 
-    <div class="control-card">
-        <h4>🏢 Practice Branches</h4>
-        <p>Audit active clinic locations, configure operational geographic boundaries, and analyze structural settings.</p>
-        <a href="/clinics/" class="control-btn">Manage Branches</a>
+        <div class="timeline-body">
+            {% for doc, appts in schedule_matrix.items %}
+                <div class="doctor-row">
+                    <div class="doctor-meta">
+                        Dr. {{ doc.full_name }}
+                        <small>Practitioner ID: #{{ doc.pk }}</small>
+                    </div>
+                    <div class="slots-container">
+                        {% for appt in appts %}
+                            <a href="{% url 'appointments:detail' appt.pk %}" class="appointment-block">
+                                <span class="appointment-time">⏰ {{ appt.scheduled_at|date:"g:i A" }}</span>
+                                <span class="patient-name">👤 {{ appt.patient.full_name }}</span>
+                            </a>
+                        {% empty %}
+                            <div class="empty-timeline" style="padding: 0; margin: auto 0; font-size: 13px;">No scheduled consultation entries for this path.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-timeline">
+                    No medical practitioners matched your active organizational profile constraints.
+                </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}

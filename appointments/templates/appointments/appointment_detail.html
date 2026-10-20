@@ -157,9 +157,10 @@
                 {% for log in sms_logs %}
                     <tr>
                         <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
-                        <td>{{ log.to_number }}</td>
+                        <td><code>{{ log.to_number }}</code></td>
                         <td>{{ log.body }}</td>
                         <td>
+                            <!-- Clean inline color configuration using clean string matching -->
                             <span style="font-weight: bold; color: {% if log.status == 'SENT' %}#2ecc71{% elif log.status == 'QUEUED' %}#3498db{% else %}#e74c3c{% endif %};">
                                 {{ log.get_status_display }}
                             </span>

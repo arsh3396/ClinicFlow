@@ -115,3 +115,19 @@ class AppointmentForm(forms.ModelForm):
         if commit:
             appointment.save()
         return appointment
+
+
+class AppointmentRescheduleForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ['scheduled_at', 'doctor']
+        widgets = {
+            'scheduled_at': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'doctor': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def clean_scheduled_at(self):
+        scheduled_at = self.cleaned_data.get('scheduled_at')
+        if scheduled_at and scheduled_at < timezone.now():
+            raise forms.ValidationError("Cannot reschedule an appointment to a past date.")
+        return scheduled_at

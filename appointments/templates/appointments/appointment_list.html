@@ -37,7 +37,7 @@
 <div class="dashboard-container">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="color: #2c3e50; margin: 0;">Comprehensive Appointment Logs</h2>
-        {% if can_book %}
+        {% if user_role != 'DOCTOR' %}
             <a href="{% url 'appointments:appointment_create' %}" class="btn-primary">➕ New Appointment</a>
         {% endif %}
     </div>

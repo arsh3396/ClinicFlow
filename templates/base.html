@@ -21,28 +21,58 @@
     </style>
 </head>
 <body>
-    <nav>
-        <a href="/" style="text-decoration: none; color: #ffffff;">
+        <nav>
+        <a href="{% url 'appointments:workspace_dashboard' %}" style="text-decoration: none; color: #ffffff;">
             <h1>🩺 ClinicFlow</h1>
         </a>
         
-        <!-- Cleaned Layout Group Container for Navigation Options -->
+        <!-- Role-Based Navigation Options Container -->
         <div class="nav-links">
-            <a href="/search/history/" class="{% if 'search' in request.path %}active{% endif %}">
-                <i class="bi bi-search me-1"></i> Search Records
+            <!-- 1. Dashboard & Schedule: Visible to Everyone -->
+            <a href="{% url 'appointments:workspace_dashboard' %}" class="{% if request.path == '/appointments/dashboard/' %}active{% endif %}">
+                📊 Dashboard
             </a>
+            <a href="{% url 'appointments:schedule' %}" class="{% if 'schedule' in request.path %}active{% endif %}">
+                📅 Schedule
+            </a>
+
+            <!-- 2. Patients & Appointments: Visible to Everyone -->
+            <a href="/patients/" class="{% if 'patients' in request.path %}active{% endif %}">
+                👤 Patients
+            </a>
+            <a href="{% url 'appointments:appointment_list' %}" class="{% if 'appointment' in request.path and not 'schedule' in request.path and not 'dashboard' in request.path %}active{% endif %}">
+                🗓️ Appointments
+            </a>
+
+            <!-- 3. History Search: Superuser, Clinic Admin, and Doctor Only (Hidden for Receptionist) -->
+            {% if request.user.is_superuser or user_role == "CLINIC_ADMIN" or user_role == "DOCTOR" %}
+            <a href="/search/history/" class="{% if 'search' in request.path %}active{% endif %}">
+                🔍 Search Records
+            </a>
+            {% endif %}
             
+            <!-- 4. Clinics and Doctors Portals: Superuser and Clinic Admin Only (Hidden for Doctor and Receptionist) -->
+            {% if request.user.is_superuser or user_role == "CLINIC_ADMIN" %}
             <span class="management-header">Management:</span>
             
             <a href="{% url 'clinics:clinic_list' %}" class="{% if 'clinics' in request.path and not 'doctors' in request.path %}active{% endif %}">
-                <i class="bi bi-building me-1"></i> Clinics Portal
+                🏢 Clinics
             </a>
 
             <a href="{% url 'clinics:doctor_list' %}" class="{% if 'doctors' in request.path %}active{% endif %}">
-                <i class="bi bi-person-badge me-1"></i> Medical Staff
+                👨‍⚕️ Medical Staff
             </a>
+            {% endif %}
+
+            <!-- 5. System Backend Core Access: Strict Superuser-Only Guard -->
+            {% if request.user.is_superuser %}
+            <a href="/admin/" style="background-color: #e74c3c; border-color: #c0392b;">
+                ⚙️ Admin Portal
+            </a>
+            {% endif %}
         </div>
     </nav>
+
 
     <!-- Messaging Block to Handle Success and Failure Notification Banners Natively -->
     <div class="container mt-3">
