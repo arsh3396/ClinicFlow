@@ -10,6 +10,5 @@ urlpatterns = [
     path("schedule/", views.daily_schedule, name="schedule"),
     path("<int:pk>/", views.appointment_detail, name="detail"),
     path("<int:pk>/reschedule/", views.appointment_reschedule, name="reschedule"),
-    path("<int:pk>/status/", views.appointment_status, name="status"),
     path('<int:pk>/edit/', views.appointment_update, name='appointment_update'),
 ]

@@ -1,86 +1,154 @@
 {% extends "base.html" %}
 
-{% block title %}ClinicFlow | Appointments Matrix{% endblock %}
+{% block title %}ClinicFlow | Appointment Workspace Matrix{% endblock %}
 
 {% block extra_css %}
-.header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.header-actions h2 { color: #2c3e50; margin: 0; }
-.action-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
-.action-btn:hover { background-color: #2980b9; }
-.table-card { background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; }
-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-th { background-color: #f8fafc; padding: 15px 20px; border-bottom: 2px solid #e2e8f0; color: #4a5568; font-weight: 600; }
-td { padding: 15px 20px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
-.badge { display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: bold; border-radius: 4px; text-transform: uppercase; }
-.status-scheduled { background: #ebf8ff; color: #2b6cb0; }
-.status-completed { background: #e6fffa; color: #234e52; }
-.status-cancelled { background: #fff5f5; color: #742a2a; }
-.reminder-true { background: #c6f6d5; color: #22543d; }
-.reminder-false { background: #feebc8; color: #744210; }
-.view-link { color: #3498db; text-decoration: none; font-weight: 600; }
-.view-link:hover { text-decoration: underline; }
+.dashboard-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.filter-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 25px; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; }
+.filter-group label { font-weight: 600; color: #4a5568; margin-bottom: 6px; font-size: 13px; }
+.filter-input, .filter-select { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; background-color: #fff; }
+.filter-actions { display: flex; gap: 10px; margin-top: 15px; justify-content: flex-end; }
+
+.table-card { background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; }
+.appt-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+.appt-table th, .appt-table td { padding: 12px 15px; border-bottom: 1px solid #edf2f7; }
+.appt-table th { background: #f8fafc; color: #4a5568; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+.appt-table tbody tr { cursor: pointer; transition: background 0.15s ease; }
+.appt-table tbody tr:hover { background: #f7fafc; }
+
+.badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+.status-scheduled { background-color: #e3f2fd; color: #1e88e5; }
+.status-completed { background-color: #e8f5e9; color: #43a047; }
+.status-cancelled { background-color: #ffebee; color: #e53935; }
+.reminder-sent { background-color: #e8f5e9; color: #43a047; }
+.reminder-pending { background-color: #fef3c7; color: #d97706; }
+
+.btn-primary { padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; font-weight: bold; text-decoration: none; cursor: pointer; font-size: 14px; display: inline-block; }
+.btn-primary:hover { background-color: #2980b9; }
+.btn-secondary { padding: 8px 16px; background-color: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 4px; font-weight: bold; text-decoration: none; font-size: 14px; }
+.btn-secondary:hover { background-color: #e2e8f0; }
+
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; align-items: center; font-size: 14px; color: #4a5568; }
 {% endblock %}
 
 {% block content %}
-<div class="header-actions">
-    <h2>Appointment Scheduling Matrix</h2>
-    <a href="{% url 'appointments:appointment_create' %}" class="action-btn">+ Book New Appointment</a>
-</div>
+<div class="dashboard-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="color: #2c3e50; margin: 0;">Comprehensive Appointment Logs</h2>
+        {% if can_book %}
+            <a href="{% url 'appointments:appointment_create' %}" class="btn-primary">➕ New Appointment</a>
+        {% endif %}
+    </div>
 
-<div class="table-card">
-    {% if page.object_list %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Patient Identifier</th>
-                    <th>Assigned Practitioner</th>
-                    <th>Clinic Location</th>
-                    <th>Scheduled Date/Time</th>
-                    <th>Status</th>
-                    <th>SMS Reminder</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for appt in page %}
+    <!-- Multi-Filter Control Console -->
+    <div class="filter-card">
+        <form method="GET" action="{% url 'appointments:appointment_list' %}">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="clinic">Clinic Location</label>
+                    <select name="clinic" id="clinic" class="filter-select">
+                        <option value="">-- All Clinics --</option>
+                        {% for c in clinics %}
+                            <option value="{{ c.pk }}" {% if filters.clinic == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="doctor">Assigned Practitioner</label>
+                    <select name="doctor" id="doctor" class="filter-select">
+                        <option value="">-- All Doctors --</option>
+                        {% for d in doctors %}
+                            <option value="{{ d.pk }}" {% if filters.doctor == d.pk|stringformat:"s" %}selected{% endif %}>Dr. {{ d.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="status">Appointment Status</label>
+                    <select name="status" id="status" class="filter-select">
+                        <option value="">-- All Statuses --</option>
+                        {% for choice_val, choice_label in statuses %}
+                            <option value="{{ choice_val }}" {% if filters.status == choice_val %}selected{% endif %}>{{ choice_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="from">Date Range From</label>
+                    <input type="date" name="from" id="from" value="{{ filters.from }}" class="filter-input">
+                </div>
+
+                <div class="filter-group">
+                    <label for="to">Date Range To</label>
+                    <input type="date" name="to" id="to" value="{{ filters.to }}" class="filter-input">
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <a href="{% url 'appointments:appointment_list' %}" class="btn-secondary">Clear Filters</a>
+                <button type="submit" class="btn-primary" style="padding: 8px 16px;">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Appointment Datagrid Ledger -->
+    <div class="table-card">
+        {% if page.object_list %}
+            <table class="appt-table" id="appointmentsTable">
+                <thead>
                     <tr>
-                        <td><strong>{{ appt.patient.last_name }}, {{ appt.patient.first_name }}</strong></td>
-                        <td>Dr. {{ appt.doctor.full_name }}</td>
-                        <td>{{ appt.clinic.name }}</td>
-                        <td>{{ appt.scheduled_at|date:"Y-m-d h:i A" }}</td>
-                        <td>
-                            <span class="badge status-{{ appt.status|lower }}">{{ appt.get_status_display }}</span>
-                        </td>
-                        <td>
-                            <span class="badge reminder-{{ appt.reminder_sent|lower }}">
-                                {% if appt.reminder_sent %}Sent{% else %}Pending{% endif %}
-                            </span>
-                        </td>
-                        <td><a href="{% url 'appointments:detail' appt.pk %}" class="view-link">Open Chart</a></td>
+                        <th>Patient Name</th>
+                        <th>Assigned Doctor</th>
+                        <th>Clinic Branch</th>
+                        <th>Scheduled Date & Time</th>
+                        <th>Status Badge</th>
+                        <th>Reminder Status</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for appt in page %}
+                        <!-- Enforces Clickable Row Navigation to Appointment Detail View -->
+                        <tr onclick="window.location='{% url 'appointments:detail' appt.pk %}';">
+                            <td><strong>{{ appt.patient.last_name }}, {{ appt.patient.first_name }}</strong></td>
+                            <td>Dr. {{ appt.doctor.full_name }}</td>
+                            <td>{{ appt.clinic.name }}</td>
+                            <td>{{ appt.scheduled_at|date:"Y-m-d h:i A" }}</td>
+                            <td>
+                                <span class="badge status-{{ appt.status|lower }}">{{ appt.get_status_display }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if appt.reminder_sent %}reminder-sent{% else %}reminder-pending{% endif %}">
+                                    {% if appt.reminder_sent %}Sent{% else %}Pending{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-    {% if page.has_other_pages %}
-        <div class="pagination" style="margin-top: 15px; text-align: center;">
-            {% if page.has_previous %}
-                <a href="?page={{ page.previous_page_number }}{% if filters.clinic %}&clinic={{ filters.clinic }}{% endif %}{% if filters.doctor %}&doctor={{ filters.doctor }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.from %}&from={{ filters.from }}{% endif %}{% if filters.to %}&to={{ filters.to }}{% endif %}">&laquo; Previous</a>
+            <!-- Maintained State Pagination Blocks -->
+            {% if page.has_other_pages %}
+                <div class="pagination" style="padding: 15px; border-top: 1px solid #edf2f7;">
+                    {% if page.has_previous %}
+                        <a href="?page={{ page.previous_page_number }}&clinic={{ filters.clinic }}&doctor={{ filters.doctor }}&status={{ filters.status }}&from={{ filters.from }}&to={{ filters.to }}" class="btn-secondary" style="padding: 5px 10px; text-decoration: none;">&laquo; Previous</a>
+                    {% endif %}
+                    
+                    <span>Page <strong>{{ page.number }}</strong> of {{ page.paginator.num_pages }}</span>
+                    
+                    {% if page.has_next %}
+                        <a href="?page={{ page.next_page_number }}&clinic={{ filters.clinic }}&doctor={{ filters.doctor }}&status={{ filters.status }}&from={{ filters.from }}&to={{ filters.to }}" class="btn-secondary" style="padding: 5px 10px; text-decoration: none;">Next &raquo;</a>
+                    {% endif %}
+                </div>
             {% endif %}
-            
-            <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-            
-            {% if page.has_next %}
-                <a href="?page={{ page.next_page_number }}{% if filters.clinic %}&clinic={{ filters.clinic }}{% endif %}{% if filters.doctor %}&doctor={{ filters.doctor }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.from %}&from={{ filters.from }}{% endif %}{% if filters.to %}&to={{ filters.to }}{% endif %}">Next &raquo;</a>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    {% else %}
-        <div style="padding: 40px; text-align: center; color: #718096;">
-            <h3>No Scheduled Appointments Found</h3>
-            <p>Use the booking controls or admin node to inject baseline calendar tracking data.</p>
-        </div>
-    {% endif %}
+        {% else %}
+            <div style="padding: 50px; text-align: center; color: #718096;">
+                <h3>No Matching Appointments Found</h3>
+                <p>Adjust your grid filter coordinates or clear search scopes to uncover operational entries.</p>
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

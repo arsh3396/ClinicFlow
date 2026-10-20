@@ -10,11 +10,32 @@
 .info-group { margin-bottom: 15px; }
 .info-group label { display: block; color: #718096; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
 .info-group div { font-size: 16px; color: #2d3748; font-weight: 500; }
-.btn-group { display: flex; gap: 10px; border-top: 1px solid #edf2f7; padding-top: 20px; }
-.back-btn { padding: 10px 20px; background-color: #edf2f7; border: 1px solid #cbd5e0; border-radius: 4px; color: #4a5568; text-decoration: none; font-weight: bold; font-size: 14px; }
+.info-group div a { color: #3498db; text-decoration: none; font-weight: bold; }
+.info-group div a:hover { text-decoration: underline; }
+
+.btn-group { display: flex; gap: 10px; border-top: 1px solid #edf2f7; padding-top: 20px; flex-wrap: wrap; }
+.back-btn { padding: 10px 20px; background-color: #edf2f7; border: 1px solid #cbd5e0; border-radius: 4px; color: #4a5568; text-decoration: none; font-weight: bold; font-size: 14px; text-align: center; }
 .back-btn:hover { background-color: #e2e8f0; }
-.edit-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; }
+.edit-btn { padding: 10px 20px; background-color: #3498db; border: none; border-radius: 4px; color: white; text-decoration: none; font-weight: bold; font-size: 14px; text-align: center; }
 .edit-btn:hover { background-color: #2980b9; }
+
+/* Section 10 Operational Custom Action Button CSS Rules */
+.action-form { display: inline; }
+.action-btn { padding: 10px 20px; border: none; border-radius: 4px; color: white; font-weight: bold; font-size: 14px; cursor: pointer; }
+.btn-complete { background-color: #2ecc71; }
+.btn-complete:hover { background-color: #27ae60; }
+.btn-noshow { background-color: #e67e22; }
+.btn-noshow:hover { background-color: #d35400; }
+.btn-cancel { background-color: #e74c3c; }
+.btn-cancel:hover { background-color: #c0392b; }
+.btn-requeue { background-color: #9b59b6; }
+.btn-requeue:hover { background-color: #8e44ad; }
+
+/* SMS Audit Logs Grid Tables CSS Rules */
+.section-title { font-size: 14px; font-weight: bold; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #edf2f7; padding-bottom: 6px; margin-top: 35px; margin-bottom: 15px; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+.log-table th, .log-table td { padding: 10px 12px; text-align: left; border: 1px solid #edf2f7; }
+.log-table th { background: #f8fafc; color: #4a5568; font-weight: bold; }
 {% endblock %}
 
 {% block content %}
@@ -27,15 +48,32 @@
     <div class="grid-layout">
         <div class="info-group">
             <label>Registered Patient</label>
-            <div>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</div>
+            <!-- LINK: patient name → Patient Detail -->
+            <div>
+                <a href="{% url 'patients:patient_detail' appointment.patient.pk %}">
+                    {{ appointment.patient.first_name }} {{ appointment.patient.last_name }}
+                </a>
+            </div>
         </div>
         <div class="info-group">
             <label>Assigned Practitioner</label>
-            <div>Dr. {{ appointment.doctor.full_name }} ({{ appointment.doctor.specialization }})</div>
+            <!-- LINK: doctor → Schedule -->
+            <div>
+                <a href="{% url 'appointments:schedule' %}?doctor={{ appointment.doctor.pk }}&clinic={{ appointment.clinic.pk }}">
+                
+                    Dr. {{ appointment.doctor.full_name }} ({{ appointment.doctor.specialization }})
+                </a>
+            </div>
         </div>
         <div class="info-group">
             <label>Physical Clinic Location</label>
-            <div>{{ appointment.clinic.name }} ({{ appointment.clinic.city }})</div>
+            <!-- LINK: clinic → Schedule -->
+            <div>
+                <a href="{% url 'appointments:schedule' %}?doctor={{ appointment.doctor.pk }}&clinic={{ appointment.clinic.pk }}">
+
+                    {{ appointment.clinic.name }} ({{ appointment.clinic.city }})
+                </a>
+            </div>
         </div>
         <div class="info-group">
             <label>Scheduled Execution Timestamp</label>
@@ -48,8 +86,12 @@
         <div class="info-group">
             <label>Background Worker Sync (SMS Status)</label>
             <div>
-                {% if appointment.reminder_sent %}
+                {% if appointment.status == 'CANCELLED' %}
+                    <span style="color: #718096; font-weight: bold;">🚫 Bypassed (Cancelled)</span>
+                {% elif appointment.reminder_sent and appointment.reminder_sent_at %}
                     <span style="color: #22543d; font-weight: bold;">Dispatched at {{ appointment.reminder_sent_at|date:"Y-m-d H:i" }}</span>
+                {% elif appointment.reminder_sent and not appointment.reminder_sent_at %}
+                    <span style="color: #9b2c2c; font-weight: bold;">⚠️ Delivery Operation Failed</span>
                 {% else %}
                     <span style="color: #744210; font-weight: bold;">Pending Background Queue Scan</span>
                 {% endif %}
@@ -59,7 +101,75 @@
 
     <div class="btn-group">
         <a href="{% url 'appointments:appointment_list' %}" class="back-btn">⬅️ Back to Matrix</a>
-        <a href="{% url 'appointments:appointment_update' appointment.pk %}" class="edit-btn">Reschedule Slot</a>
+
+        {% if is_locked %}
+            <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px 15px; border-radius: 4px; color: #718096; font-size: 13px; font-weight: 500; display: inline-block;">
+                🔒 Terminal records are locked except for Superusers.
+            </div>
+        {% else %}
+            <!-- Mark Completed Form Action -->
+            <form method="POST" action="{% url 'appointments:detail' appointment.pk %}" class="action-form" onsubmit="return confirm('Change status tracking to Completed?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="COMPLETED">
+                <button type="submit" class="action-btn btn-complete">✔️ Complete</button>
+            </form>
+
+            <!-- Mark No-Show Form Action -->
+            <form method="POST" action="{% url 'appointments:detail' appointment.pk %}" class="action-form" onsubmit="return confirm('Change status tracking to No-Show?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="NO_SHOW">
+                <button type="submit" class="action-btn btn-noshow">⚠️ No-Show</button>
+            </form>
+
+            <!-- Cancel Appointment Form Action (Dialog Confirmation text intercepts) -->
+            <form method="POST" action="{% url 'appointments:detail' appointment.pk %}" class="action-form" onsubmit="return confirm('Are you absolutely sure you want to cancel this appointment slot? This will cancel any pending background alerts.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="CANCEL">
+                <button type="submit" class="action-btn btn-cancel">🛑 Cancel</button>
+            </form>
+
+            <!-- Reschedule Route Anchor GET text parameter links -->
+            <a href="{% url 'appointments:reschedule' appointment.pk %}" class="edit-btn">Reschedule Slot</a>
+
+            <!-- Administrative Re-Queue failed reminders form button -->
+            {% if appointment.reminder_sent and not appointment.reminder_sent_at and request.user.is_superuser or request.user.is_clinic_admin %}
+                <form method="POST" action="{% url 'appointments:detail' appointment.pk %}" class="action-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="RE_QUEUE">
+                    <button type="submit" class="action-btn btn-requeue">⚡ Re-queue SMS</button>
+                </form>
+            {% endif %}
+        {% endif %}
     </div>
+
+    <div class="section-title">Asynchronous SMS Dispatch Logs</div>
+    {% if sms_logs %}
+        <table class="log-table">
+            <thead>
+                <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>Recipient Number</th>
+                    <th>SMS Payload Notes</th>
+                    <th>Status Badge</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in sms_logs %}
+                    <tr>
+                        <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ log.to_number }}</td>
+                        <td>{{ log.body }}</td>
+                        <td>
+                            <span style="font-weight: bold; color: {% if log.status == 'SENT' %}#2ecc71{% elif log.status == 'QUEUED' %}#3498db{% else %}#e74c3c{% endif %};">
+                                {{ log.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="color: #718096; font-size: 14px; font-style: italic; margin-top: 5px;">No automated communication logging entries generated for this active booking.</p>
+    {% endif %}
 </div>
 {% endblock %}

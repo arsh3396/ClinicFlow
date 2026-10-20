@@ -102,19 +102,66 @@ def appointment_create(request: HttpRequest) -> HttpResponse:
         {"form": form, "title": "New appointment"},
     )
 
-
 @login_required
+@require_http_methods(["GET", "POST"])
 def appointment_detail(request: HttpRequest, pk: int) -> HttpResponse:
     appointment = get_object_or_404(appointment_scope(request.user), pk=pk)
+    user = request.user
+    
+    allowed_terminal_statuses = {
+        AppointmentStatus.COMPLETED, 
+        AppointmentStatus.CANCELLED, 
+        AppointmentStatus.NO_SHOW
+    }
+    
+    is_locked = appointment.status in allowed_terminal_statuses and not user.is_superuser
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        
+        if is_locked:
+            messages.error(request, "Terminal statuses are locked, except for a Superuser.")
+            return redirect("appointments:detail", pk=pk)
+
+        if action in [AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW]:
+            appointment.status = action
+            appointment.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"Appointment status updated to {appointment.get_status_display()}.")
+            return redirect("appointments:detail", pk=pk)
+
+        elif action == "CANCEL":
+            appointment.status = AppointmentStatus.CANCELLED
+            
+            if not appointment.reminder_sent:
+                appointment.reminder_sent = True 
+                
+            appointment.save(update_fields=["status", "reminder_sent", "updated_at"])
+            messages.success(request, "Appointment successfully cancelled. Pending alerts skipped.")
+            return redirect("appointments:detail", pk=pk)
+
+        elif action == "RE_QUEUE":
+            if not user.is_superuser and not getattr(user, "is_clinic_admin", False):
+                messages.error(request, "Access denied: Administrative privileges required to re-queue.")
+            else:
+                appointment.reminder_sent = False
+                appointment.reminder_sent_at = None
+                appointment.save(update_fields=["reminder_sent", "reminder_sent_at", "updated_at"])
+                messages.success(request, "Communication reminder successfully re-queued.")
+            return redirect("appointments:detail", pk=pk)
+
+    sms_logs = appointment.sms_logs.all()
+    
     return render(
         request,
         "appointments/appointment_detail.html",
         {
             "appointment": appointment,
-            "can_book": can_book_appointments(request.user),
-            "is_scheduled": appointment.status == AppointmentStatus.SCHEDULED,
+            "sms_logs": sms_logs,
+            "is_locked": is_locked,
+            "AppointmentStatus": AppointmentStatus,
         },
     )
+
 
 
 @login_required
@@ -136,33 +183,6 @@ def appointment_reschedule(request: HttpRequest, pk: int) -> HttpResponse:
         "appointments/appointment_form.html",
         {"form": form, "title": "Reschedule appointment", "appointment": appointment},
     )
-
-
-@login_required
-@require_http_methods(["POST"])
-def appointment_status(request: HttpRequest, pk: int) -> HttpResponse:
-    if not can_book_appointments(request.user):
-        return _forbidden(request)
-    appointment = get_object_or_404(appointment_scope(request.user), pk=pk)
-    new_status = request.POST.get("status")
-    allowed = {
-        AppointmentStatus.COMPLETED,
-        AppointmentStatus.CANCELLED,
-        AppointmentStatus.NO_SHOW,
-    }
-    if appointment.status != AppointmentStatus.SCHEDULED:
-        messages.error(request, "Terminal statuses cannot be changed except by a superuser.")
-        if not request.user.is_superuser:
-            return redirect("appointments:detail", pk=pk)
-    if new_status not in allowed and not (
-        request.user.is_superuser and new_status in AppointmentStatus.values
-    ):
-        messages.error(request, "Invalid status.")
-        return redirect("appointments:detail", pk=pk)
-    appointment.status = new_status
-    appointment.save(update_fields=["status", "updated_at"])
-    messages.success(request, f"Appointment marked {appointment.get_status_display()}.")
-    return redirect("appointments:detail", pk=pk)
 
 
 @login_required
