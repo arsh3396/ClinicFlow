@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import environ, os
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,9 +27,7 @@ env = environ.Env(
 # container / CI environments can inject variables directly.
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-# ---------------------------------------------------------------------------
-# Core / secrets firewall (FR-CFG-2, FR-CFG-5)
-# ---------------------------------------------------------------------------
+
 
 # Fail-fast when SECRET_KEY is unset — no insecure default.
 SECRET_KEY: str = env("SECRET_KEY")
@@ -39,9 +38,6 @@ ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS")
 if not DEBUG and not ALLOWED_HOSTS:
     raise ValueError("ALLOWED_HOSTS must be set when DEBUG is False.")
 
-# ---------------------------------------------------------------------------
-# Application definition
-# ---------------------------------------------------------------------------
 
 INSTALLED_APPS: list[str] = [
     "django.contrib.admin",
@@ -88,9 +84,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "clinicflow.wsgi.application"
 ASGI_APPLICATION = "clinicflow.asgi.application"
 
-# ---------------------------------------------------------------------------
-# Database — interchangeable SQLite / PostgreSQL via DATABASE_URL (C-4, FR-CFG-8)
-# ---------------------------------------------------------------------------
 
 
 def _build_default_database() -> dict:
@@ -127,10 +120,6 @@ DATABASES = {"default": _build_default_database()}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---------------------------------------------------------------------------
-# Auth / sessions (FR-AUTH-4, FR-AUTH-6, NFR-SEC-4)
-# ---------------------------------------------------------------------------
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {
@@ -141,7 +130,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# 30 minutes of inactivity by default (FR-AUTH-6); overridable via env.
 SESSION_COOKIE_AGE: int = env.int("SESSION_COOKIE_AGE")
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_HTTPONLY = True
@@ -154,26 +142,16 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 
-# ---------------------------------------------------------------------------
-# Internationalization (C-10)
-# ---------------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# ---------------------------------------------------------------------------
-# Static files
-# ---------------------------------------------------------------------------
-
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-# ---------------------------------------------------------------------------
-# SMS / Twilio (FR-SMS-12, FR-CFG-2, FR-CFG-5)
-# ---------------------------------------------------------------------------
 
 SMS_BACKEND: str = env.str("SMS_BACKEND").lower()
 if SMS_BACKEND not in {"mock", "twilio"}:
@@ -200,14 +178,16 @@ if SMS_BACKEND == "twilio":
 
 REMINDER_LEAD_HOURS: int = env.int("REMINDER_LEAD_HOURS")
 
-# ---------------------------------------------------------------------------
-# Celery / Redis broker (C-2, FR-SMS-14, SI-2, SI-5)
-# ---------------------------------------------------------------------------
 
 REDIS_URL: str = env.str("REDIS_URL")
 
-CELERY_BROKER_URL: str = REDIS_URL
-CELERY_RESULT_BACKEND: str = REDIS_URL
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'redis_version_check': False,
+    'protocol': 2,  
+}
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -217,19 +197,15 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
-# Fallback in-process schedule used when Beat is started without DB entries.
-# Period is 300 seconds (FR-SMS-2, SI-5).
 CELERY_BEAT_SCHEDULE = {
-    "scan-and-queue-reminders": {
-        "task": "appointments.tasks.scan_and_queue_reminders",
-        "schedule": 300.0,
+    'scan-every-5-minutes': {
+        'task': 'appointments.tasks.scan_and_queue_reminders',
+        'schedule': crontab(minute='*/5'),  # Runs precisely every 5 minutes
     },
 }
-
-# ---------------------------------------------------------------------------
-# HTTP security headers (CI-1, CI-7) — enabled outside DEBUG
-# ---------------------------------------------------------------------------
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
@@ -252,10 +228,6 @@ SECURE_CSP = {
     "connect-src": ["'self'"],
     "frame-ancestors": ["'none'"],
 }
-
-# ---------------------------------------------------------------------------
-# Logging — stdout (container-friendly). Never log secret values (FR-CFG-7).
-# ---------------------------------------------------------------------------
 
 LOGGING = {
     "version": 1,

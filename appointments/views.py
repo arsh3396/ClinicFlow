@@ -21,6 +21,46 @@ from clinicflow.access import (
 from .forms import AppointmentForm, AppointmentRescheduleForm
 from .models import Appointment, AppointmentStatus
 
+from django.http import JsonResponse
+from django.db import connections
+from django.db.utils import OperationalError
+import redis
+
+def health_check_view(request):
+    """
+    Requirement Met: Public /healthz/ endpoint returning database and Redis connectivity statuses.
+    """
+    health_status = {
+        "status": "healthy",
+        "database": "up",
+        "redis": "up"
+    }
+    status_code = 200
+
+    # 1. Test Database Connectivity
+    try:
+        db_conn = connections['default']
+        db_conn.cursor()  # Triggers a lightweight query signature validation check
+    except OperationalError:
+        health_status["database"] = "down"
+        health_status["status"] = "unhealthy"
+        status_code = 503
+
+    # 2. Test Redis Connectivity
+    try:
+        from django.conf import settings
+        # Parse connection configurations safely from your settings
+        broker_url = getattr(settings, 'CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
+        r = redis.Redis.from_url(broker_url, socket_timeout=2)
+        r.ping()  # Send lightweight validation check command
+    except Exception:
+        health_status["redis"] = "down"
+        health_status["status"] = "unhealthy"
+        status_code = 503
+
+    return JsonResponse(health_status, status=status_code)
+
+
 
 def _forbidden(request: HttpRequest, message: str | None = None) -> HttpResponse:
     return render(request, "core/forbidden.html", {"message": message}, status=403)

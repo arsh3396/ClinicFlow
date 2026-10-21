@@ -57,7 +57,7 @@ class Appointment(models.Model):
     )
     created_at: models.DateTimeField = models.DateTimeField(auto_now_add=True)
     updated_at: models.DateTimeField = models.DateTimeField(auto_now=True)
-
+    reminder_sent = models.BooleanField(default=False)
     class Meta:
         ordering: ClassVar[list[str]] = ["scheduled_at"]
         indexes: ClassVar[list[models.Index]] = [

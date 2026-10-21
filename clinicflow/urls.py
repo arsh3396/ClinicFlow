@@ -7,6 +7,7 @@ from django.views.generic import RedirectView
 
 from clinicflow import views as core_views
 from patients import views as patient_views
+from appointments.views import health_check_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -28,4 +29,5 @@ urlpatterns = [
     path("search/history/", patient_views.history_search, name="history_search"),
     path("appointments/", include("appointments.urls")),
     path("schedule/", patient_views.history_search, name="schedule_alias_unused"),
+    path('healthz/', health_check_view, name='health_check'),
 ]
